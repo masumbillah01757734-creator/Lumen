@@ -6,7 +6,7 @@ import { setSessionCookie } from "@/lib/auth";
 
 export async function POST(req) {
   try {
-    const { username, email, password, displayName } = await req.json();
+    const { username, email, password, displayName, role } = await req.json();
 
     if (!username || !email || !password) {
       return NextResponse.json(
@@ -44,11 +44,14 @@ export async function POST(req) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const existingAdminCount = await User.countDocuments({ role: "admin" });
+    const normalizedRole = role === "moderator" || role === "admin" ? role : "user";
     const user = await User.create({
       username: cleanUsername,
       email: email.toLowerCase().trim(),
       passwordHash,
       displayName: displayName?.trim() || cleanUsername,
+      role: existingAdminCount === 0 && normalizedRole === "admin" ? "admin" : normalizedRole,
     });
 
     await setSessionCookie(user._id.toString());

@@ -13,11 +13,12 @@ export default async function RootLayout({ children }) {
   const raw = await getCurrentUser();
   const user = raw
     ? {
-        id: raw._id,
-        username: raw.username,
-        displayName: raw.displayName,
-        avatar: raw.avatar || "",
-      }
+      id: raw._id,
+      username: raw.username,
+      displayName: raw.displayName,
+      avatar: raw.avatar || "",
+      role: raw.role || "user",
+    }
     : null;
 
   return (

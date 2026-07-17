@@ -11,13 +11,15 @@ export async function POST(req, { params }) {
 
   const { id } = await params;
   await connectDB();
-  const post = await Post.findByIdAndUpdate(
-    id,
-    { $addToSet: { views: user._id } },
-    { returnDocument: "after", select: "views" }
-  );
+  const post = await Post.findById(id);
   if (!post) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
+  }
+
+  const alreadyViewed = post.views?.some((viewer) => viewer.toString() === user._id.toString());
+  if (!alreadyViewed) {
+    post.views.push(user._id);
+    await post.save();
   }
 
   return NextResponse.json({ viewCount: post.views.length });

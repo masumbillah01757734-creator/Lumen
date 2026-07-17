@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Heart, MessageCircle, Video, Trash2, Upload } from "lucide-react";
+import { Heart, MessageCircle, Video, Trash2, Upload, ShieldCheck } from "lucide-react";
+import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 
 export default function ProfilePage() {
   const { username } = useParams();
+  const currentUser = useCurrentUser();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
@@ -72,6 +74,8 @@ export default function ProfilePage() {
     );
   }
 
+  const canModerate = profile.isMe && currentUser && (currentUser.role === "admin" || currentUser.role === "moderator");
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex items-center gap-6">
@@ -107,6 +111,15 @@ export default function ProfilePage() {
                 >
                   <Upload size={15} /> Upload
                 </Link>
+                {canModerate && (
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold"
+                    style={{ background: "var(--surface-2)", color: "var(--gold)", border: "1px solid var(--border)" }}
+                  >
+                    <ShieldCheck size={15} /> {currentUser?.role === "admin" ? "Admin dashboard" : "Moderator dashboard"}
+                  </Link>
+                )}
               </>
             ) : (
               <button

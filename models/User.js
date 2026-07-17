@@ -17,6 +17,8 @@ const UserSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     bio: { type: String, maxlength: 160, default: "" },
     avatar: { type: String, default: "" },
+    role: { type: String, enum: ["user", "moderator", "admin"], default: "user" },
+    banned: { type: Boolean, default: false },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },

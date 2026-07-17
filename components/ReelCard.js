@@ -260,15 +260,32 @@ export default function ReelCard({ post, onDeleted }) {
                     </div>
                   ) : (
                     <div className="flex items-start justify-between gap-2">
-                      <p className="flex-1">
-                        <span className="font-medium">{c.author?.username}</span>{" "}
-                        <span style={{ color: "var(--muted)" }}>{c.text}</span>
-                        {c.edited && (
-                          <span className="font-mono text-[10px] ml-1" style={{ color: "var(--muted)" }}>
-                            (edited)
-                          </span>
-                        )}
-                      </p>
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <Link href={`/profile/${c.author?.username}`} className="shrink-0">
+                          <div
+                            className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center font-display text-[11px]"
+                            style={{ background: "var(--surface-2)", color: "var(--gold)" }}
+                          >
+                            {c.author?.avatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={c.author.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              c.author?.displayName?.[0]?.toUpperCase() || c.author?.username?.[0]?.toUpperCase() || "?"
+                            )}
+                          </div>
+                        </Link>
+                        <p className="flex-1 min-w-0">
+                          <Link href={`/profile/${c.author?.username}`} className="font-medium">
+                            {c.author?.username}
+                          </Link>{" "}
+                          <span style={{ color: "var(--muted)" }}>{c.text}</span>
+                          {c.edited && (
+                            <span className="font-mono text-[10px] ml-1" style={{ color: "var(--muted)" }}>
+                              (edited)
+                            </span>
+                          )}
+                        </p>
+                      </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => toggleCommentLike(c)} className="flex items-center gap-1">
                           <Heart
