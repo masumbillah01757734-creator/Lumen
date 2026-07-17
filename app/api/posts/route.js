@@ -44,35 +44,66 @@ export async function POST(req) {
   }
 
   try {
-    const form = await req.formData();
-    const files = form.getAll("media").filter((file) => file && typeof file !== "string" && file.size > 0);
-    const caption = (form.get("caption") || "").toString().slice(0, 2200);
-    const hashtags = (form.get("hashtags") || "")
-      .toString()
-      .split(/,|\s+/)
-      .map((tag) => tag.replace(/^#/, "").trim())
-      .filter(Boolean);
-    const location = (form.get("location") || "").toString().slice(0, 120);
+    const contentType = req.headers.get("content-type") || "";
+    let mediaItems, caption, hashtags, location;
 
-    if (files.length === 0) {
-      throw new Error("Choose at least one photo or video.");
+    if (contentType.includes("application/json")) {
+      // Videos are uploaded directly to R2 from the browser via a presigned
+      // URL (see /api/uploads/video-presign) to stay under Vercel's 4.5MB
+      // function body limit. This branch just records the resulting media.
+      const body = await req.json();
+      caption = (body.caption || "").toString().slice(0, 2200);
+      hashtags = (body.hashtags || "")
+        .toString()
+        .split(/,|\s+/)
+        .map((tag) => tag.replace(/^#/, "").trim())
+        .filter(Boolean);
+      location = (body.location || "").toString().slice(0, 120);
+
+      const items = Array.isArray(body.mediaItems) ? body.mediaItems : [];
+      if (items.length === 0) {
+        throw new Error("Choose at least one photo or video.");
+      }
+      if (items.length > 1) {
+        throw new Error("Only one video can be uploaded per post.");
+      }
+      mediaItems = items.map((item) => {
+        if (!item?.url || !item?.key || item.mediaType !== "video") {
+          throw new Error("Invalid media item.");
+        }
+        return { url: item.url, mediaType: "video", key: item.key };
+      });
+    } else {
+      const form = await req.formData();
+      const files = form.getAll("media").filter((file) => file && typeof file !== "string" && file.size > 0);
+      caption = (form.get("caption") || "").toString().slice(0, 2200);
+      hashtags = (form.get("hashtags") || "")
+        .toString()
+        .split(/,|\s+/)
+        .map((tag) => tag.replace(/^#/, "").trim())
+        .filter(Boolean);
+      location = (form.get("location") || "").toString().slice(0, 120);
+
+      if (files.length === 0) {
+        throw new Error("Choose at least one photo or video.");
+      }
+
+      const isVideo = files.some((file) => file.type.startsWith("video"));
+      const isImage = files.some((file) => file.type.startsWith("image"));
+
+      if (isVideo && isImage) {
+        throw new Error("Images and videos cannot be mixed in the same post.");
+      }
+      if (isVideo && files.length > 1) {
+        throw new Error("Only one video can be uploaded per post.");
+      }
+      if (isImage && files.length > MAX_IMAGE_COUNT) {
+        throw new Error(`You can upload up to ${MAX_IMAGE_COUNT} images in one post.`);
+      }
+
+      mediaItems = await saveMediaFiles(files);
     }
 
-    const mediaTypeSet = new Set(files.map((file) => file.type));
-    const isVideo = files.some((file) => file.type.startsWith("video"));
-    const isImage = files.some((file) => file.type.startsWith("image"));
-
-    if (isVideo && isImage) {
-      throw new Error("Images and videos cannot be mixed in the same post.");
-    }
-    if (isVideo && files.length > 1) {
-      throw new Error("Only one video can be uploaded per post.");
-    }
-    if (isImage && files.length > MAX_IMAGE_COUNT) {
-      throw new Error(`You can upload up to ${MAX_IMAGE_COUNT} images in one post.`);
-    }
-
-    const mediaItems = await saveMediaFiles(files);
     const primaryMedia = mediaItems[0];
 
     await connectDB();

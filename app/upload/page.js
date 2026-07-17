@@ -155,40 +155,107 @@ export default function UploadPage() {
     setError("");
     setProgress(0);
 
-    const form = new FormData();
-    files.forEach((file) => form.append("media", file));
-    form.append("caption", caption);
-    form.append("hashtags", hashtags);
-    form.append("location", location);
+    const isVideoPost = files.some((file) => file.type.startsWith("video"));
 
     try {
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/api/posts");
+      if (isVideoPost) {
+        // Vercel Functions reject request bodies over 4.5MB, so the video
+        // never goes through /api/posts. Instead, ask the server for a
+        // presigned R2 URL and upload the file straight to storage.
+        const videoFile = files[0];
+        const presignRes = await fetch("/api/uploads/video-presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: videoFile.name,
+            contentType: videoFile.type,
+            size: videoFile.size,
+          }),
+        });
+        const presignData = await presignRes.json().catch(() => ({}));
+        if (!presignRes.ok) {
+          throw new Error(presignData.error || "Could not prepare video upload.");
+        }
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        };
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", presignData.uploadUrl);
+          xhr.setRequestHeader("Content-Type", videoFile.type);
 
-        xhr.onload = () => {
-          let data = {};
-          try {
-            data = JSON.parse(xhr.responseText || "{}");
-          } catch {
-            // ignore malformed body
-          }
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(data);
-          } else {
-            reject(new Error(data.error || "Could not upload your post."));
-          }
-        };
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              setProgress(Math.round((event.loaded / event.total) * 90));
+            }
+          };
 
-        xhr.onerror = () => reject(new Error("Network error. Try again."));
-        xhr.send(form);
-      });
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error("Could not upload your video to storage."));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Network error while uploading your video."));
+          xhr.send(videoFile);
+        });
+
+        setProgress(95);
+
+        const postRes = await fetch("/api/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            caption,
+            hashtags,
+            location,
+            mediaItems: [
+              {
+                url: presignData.publicUrl,
+                key: presignData.key,
+                mediaType: "video",
+              },
+            ],
+          }),
+        });
+        const postData = await postRes.json().catch(() => ({}));
+        if (!postRes.ok) {
+          throw new Error(postData.error || "Could not create your post.");
+        }
+      } else {
+        const form = new FormData();
+        files.forEach((file) => form.append("media", file));
+        form.append("caption", caption);
+        form.append("hashtags", hashtags);
+        form.append("location", location);
+
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/api/posts");
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              setProgress(Math.round((event.loaded / event.total) * 100));
+            }
+          };
+
+          xhr.onload = () => {
+            let data = {};
+            try {
+              data = JSON.parse(xhr.responseText || "{}");
+            } catch {
+              // ignore malformed body
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(data);
+            } else {
+              reject(new Error(data.error || "Could not upload your post."));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error("Network error. Try again."));
+          xhr.send(form);
+        });
+      }
 
       setProgress(100);
       notifySuccess("Shared to your feed.");
