@@ -1,0 +1,49 @@
+import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+
+const COOKIE_NAME = "lumen_session";
+const PUBLIC_PATHS = ["/login", "/register"];
+
+export async function middleware(req) {
+  const { pathname } = req.nextUrl;
+
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/uploads") ||
+    pathname === "/favicon.ico"
+  ) {
+    return NextResponse.next();
+  }
+
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  let authed = false;
+  if (token) {
+    try {
+      const secret = new TextEncoder().encode(
+        process.env.JWT_SECRET || "dev-secret-change-me"
+      );
+      await jwtVerify(token, secret);
+      authed = true;
+    } catch {
+      authed = false;
+    }
+  }
+
+  if (PUBLIC_PATHS.includes(pathname)) {
+    if (authed) return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.next();
+  }
+
+  if (!authed) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
