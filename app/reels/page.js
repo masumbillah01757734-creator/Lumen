@@ -8,6 +8,7 @@ import { notifyError } from "@/lib/toast";
 
 export default function ReelsPage() {
   const [reels, setReels] = useState(null);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     fetch("/api/posts?type=video")
@@ -58,7 +59,13 @@ export default function ReelsPage() {
       style={{ height: "calc(100vh - 4rem)" }}
     >
       {reels.map((post) => (
-        <ReelCard key={post.id} post={post} onDeleted={handleDeleted} />
+        <ReelCard
+          key={post.id}
+          post={post}
+          onDeleted={handleDeleted}
+          muted={muted}
+          onMuteChange={setMuted}
+        />
       ))}
     </div>
   );

@@ -7,7 +7,7 @@ import { Heart, MessageCircle, Volume2, VolumeX, Send, Trash2, Pencil, X, Check,
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 
-export default function ReelCard({ post, onDeleted }) {
+export default function ReelCard({ post, onDeleted, muted, onMuteChange }) {
   const currentUser = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
@@ -15,7 +15,6 @@ export default function ReelCard({ post, onDeleted }) {
   const containerRef = useRef(null);
   const hasViewed = useRef(false);
 
-  const [muted, setMuted] = useState(true);
   const [liked, setLiked] = useState(post.likedByMe);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [comments, setComments] = useState(post.comments || []);
@@ -174,12 +173,12 @@ export default function ReelCard({ post, onDeleted }) {
         loop
         muted={muted}
         playsInline
-        onClick={() => setMuted((m) => !m)}
+        onClick={() => onMuteChange(!muted)}
         className="w-full h-full object-contain cursor-pointer"
       />
 
       <button
-        onClick={() => setMuted((m) => !m)}
+        onClick={() => onMuteChange(!muted)}
         className="absolute top-4 right-4 p-2 rounded-full"
         style={{ background: "rgba(0,0,0,0.45)" }}
       >

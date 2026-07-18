@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Check, Plus, Share2 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
+import SimpleVideo from "@/components/SimpleVideo";
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -37,7 +38,7 @@ function MediaCarousel({ items, caption }) {
     const item = items[0];
     if (!item) return null;
     return item.mediaType === "video" ? (
-      <video src={item.url} controls className="w-full max-h-150 object-contain" />
+      <SimpleVideo src={item.url} className="w-full max-h-150 object-contain" />
     ) : (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={item.url} alt={caption || "Post media"} className="w-full max-h-150 object-contain" />
@@ -63,7 +64,7 @@ function MediaCarousel({ items, caption }) {
             className="w-full shrink-0 snap-center aspect-square flex items-center justify-center bg-black"
           >
             {item.mediaType === "video" ? (
-              <video src={item.url} controls className="w-full h-full object-cover" />
+              <SimpleVideo src={item.url} className="w-full h-full object-cover" />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={item.url} alt={caption || "Post media"} className="w-full h-full object-cover" />
@@ -420,7 +421,7 @@ export default function PostCard({ post, onDeleted }) {
 
       <div style={{ background: "#0b0a08" }}>
         {displayPost.mediaType === "video" ? (
-          <video src={displayPost.mediaUrl} controls className="w-full max-h-150 object-contain" />
+          <SimpleVideo src={displayPost.mediaUrl} className="w-full max-h-150 object-contain" />
         ) : (
           <MediaCarousel items={currentMediaItems} caption={displayPost.caption} />
         )}
