@@ -171,7 +171,7 @@ export function serializePost(p, currentUserId) {
       : null,
     likeCount: p.likes?.length || 0,
     likedByMe: uid ? !!p.likes?.some((id) => id.toString() === uid) : false,
-    viewCount: p.views?.length || 0,
+    viewCount: (p.views?.length || 0) + (p.anonymousViews || 0),
     saveCount: p.saves?.length || 0,
     shareCount: p.shares || 0,
     profileVisitCount: p.profileVisits || 0,

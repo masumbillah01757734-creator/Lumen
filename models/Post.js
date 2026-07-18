@@ -32,6 +32,7 @@ const PostSchema = new mongoose.Schema(
     location: { type: String, maxlength: 120, default: "" },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     views: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    anonymousViews: { type: Number, default: 0 },
     saves: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     shares: { type: Number, default: 0 },
     profileVisits: { type: Number, default: 0 },
