@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Heart, MessageCircle, Video, Trash2, Upload, ShieldCheck } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
@@ -9,6 +9,7 @@ import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 
 export default function ProfilePage() {
   const { username } = useParams();
+  const router = useRouter();
   const currentUser = useCurrentUser();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -29,6 +30,10 @@ export default function ProfilePage() {
   }, [username]);
 
   async function toggleFollow() {
+    if (!currentUser) {
+      router.push(`/login?next=${encodeURIComponent(`/profile/${username}`)}`);
+      return;
+    }
     setFollowLoading(true);
     try {
       const res = await fetch(`/api/users/${username}/follow`, { method: "POST" });

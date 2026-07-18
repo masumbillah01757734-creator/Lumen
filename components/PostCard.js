@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Check, Plus } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Check, Plus, Share2 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 
@@ -100,6 +101,8 @@ function MediaCarousel({ items, caption }) {
 
 export default function PostCard({ post, onDeleted }) {
   const currentUser = useCurrentUser();
+  const router = useRouter();
+  const pathname = usePathname();
   const [liked, setLiked] = useState(post.likedByMe);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [viewCount, setViewCount] = useState(post.viewCount || 0);
@@ -126,6 +129,31 @@ export default function PostCard({ post, onDeleted }) {
 
   const isMyPost = currentUser && displayPost.author?.id === currentUser.id;
 
+  // Instagram-style rule: guests can look, but any interaction sends them to
+  // sign in first.
+  function requireAuth() {
+    if (!currentUser) {
+      router.push(`/login?next=${encodeURIComponent(pathname || "/")}`);
+      return false;
+    }
+    return true;
+  }
+
+  async function sharePost() {
+    const url = `${window.location.origin}/p/${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: displayPost.caption || "Check this out on Lumen", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        notifySuccess("Link copied to clipboard.");
+      }
+    } catch {
+      // user closed the native share sheet — nothing to do
+    }
+    fetch(`/api/posts/${post.id}/share`, { method: "POST" }).catch(() => { });
+  }
+
   useEffect(() => {
     fetch(`/api/posts/${post.id}/view`, { method: "POST" })
       .then((res) => res.json())
@@ -140,6 +168,7 @@ export default function PostCard({ post, onDeleted }) {
   }, [pendingMediaPreviews]);
 
   async function toggleLike() {
+    if (!requireAuth()) return;
     setLiked((v) => !v);
     setLikeCount((c) => (liked ? c - 1 : c + 1));
     try {
@@ -157,6 +186,7 @@ export default function PostCard({ post, onDeleted }) {
 
   async function submitComment(e) {
     e.preventDefault();
+    if (!requireAuth()) return;
     if (!commentText.trim()) return;
     setPosting(true);
     try {
@@ -180,6 +210,7 @@ export default function PostCard({ post, onDeleted }) {
   }
 
   async function toggleCommentLike(comment) {
+    if (!requireAuth()) return;
     setComments((cs) =>
       cs.map((c) =>
         c.id === comment.id
@@ -414,6 +445,9 @@ export default function PostCard({ post, onDeleted }) {
             <span className="text-sm" style={{ color: "var(--muted)" }}>
               {comments.length}
             </span>
+          </button>
+          <button onClick={sharePost} className="flex items-center gap-1.5">
+            <Share2 size={20} strokeWidth={1.75} style={{ color: "var(--text)" }} />
           </button>
           <span className="flex items-center gap-1.5" style={{ color: "var(--muted)" }}>
             <Eye size={20} strokeWidth={1.75} />

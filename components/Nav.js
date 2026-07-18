@@ -13,7 +13,53 @@ export default function Nav({ user }) {
     router.refresh();
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <header
+        className="sticky top-0 z-20 border-b backdrop-blur"
+        style={{ borderColor: "var(--border)", background: "rgba(20,18,15,0.85)" }}
+      >
+        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-16">
+          <Link href="/" className="flex items-center gap-2 group">
+            <Aperture
+              size={26}
+              strokeWidth={1.5}
+              style={{ color: "var(--accent)" }}
+              className="transition-transform group-hover:rotate-45 duration-500"
+            />
+            <span className="font-display text-2xl tracking-tight" style={{ color: "var(--text)" }}>
+              Lumen
+            </span>
+          </Link>
+
+          <nav className="flex items-center gap-1">
+            <Link
+              href="/reels"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
+              style={{ color: "var(--text)" }}
+            >
+              <Clapperboard size={18} strokeWidth={1.75} />
+              <span className="hidden sm:inline">Reels</span>
+            </Link>
+            <Link
+              href="/login"
+              className="px-3 py-2 rounded-full text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
+              style={{ color: "var(--text)" }}
+            >
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              className="px-4 py-2 rounded-full text-sm font-semibold"
+              style={{ background: "var(--accent)", color: "#14120f" }}
+            >
+              Sign up
+            </Link>
+          </nav>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header

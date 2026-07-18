@@ -27,6 +27,7 @@ const PostSchema = new mongoose.Schema(
     mediaType: { type: String, enum: ["image", "video"], required: true },
     mediaItems: [MediaItemSchema],
     caption: { type: String, maxlength: 2200, default: "" },
+    thumbnail: { type: String, default: "" },
     hashtags: [{ type: String, trim: true }],
     location: { type: String, maxlength: 120, default: "" },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

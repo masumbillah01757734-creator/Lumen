@@ -7,10 +7,10 @@ import { generateExif } from "@/lib/exif";
 import { rankPosts } from "@/lib/ranking";
 
 export async function GET(req) {
+  // Guests can browse the feed and reels read-only (like Instagram); actions
+  // such as liking, commenting, or following still require signing in and are
+  // enforced by their own routes.
   const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Sign in required." }, { status: 401 });
-  }
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -28,12 +28,13 @@ export async function GET(req) {
   const ranked = rankPosts(allPosts);
   const start = (page - 1) * limit;
   const pageItems = ranked.slice(start, start + limit);
-  const serialized = pageItems.map((p) => serializePost(p, user._id));
+  const serialized = pageItems.map((p) => serializePost(p, user?._id || null));
 
   return NextResponse.json({
     posts: serialized,
     page,
     hasMore: start + limit < ranked.length,
+    viewerSignedIn: Boolean(user),
   });
 }
 
@@ -45,7 +46,7 @@ export async function POST(req) {
 
   try {
     const contentType = req.headers.get("content-type") || "";
-    let mediaItems, caption, hashtags, location;
+    let mediaItems, caption, hashtags, location, thumbnailUrl;
 
     if (contentType.includes("application/json")) {
       // Videos are uploaded directly to R2 from the browser via a presigned
@@ -59,6 +60,7 @@ export async function POST(req) {
         .map((tag) => tag.replace(/^#/, "").trim())
         .filter(Boolean);
       location = (body.location || "").toString().slice(0, 120);
+      thumbnailUrl = (body.thumbnailUrl || "").toString().slice(0, 500);
 
       const items = Array.isArray(body.mediaItems) ? body.mediaItems : [];
       if (items.length === 0) {
@@ -119,6 +121,7 @@ export async function POST(req) {
       caption,
       hashtags,
       location,
+      thumbnail: thumbnailUrl || "",
       exif: generateExif(),
     });
 
@@ -136,18 +139,22 @@ export async function POST(req) {
 }
 
 export function serializePost(p, currentUserId) {
-  const uid = currentUserId.toString();
+  // currentUserId is null for guests browsing without an account.
+  const uid = currentUserId ? currentUserId.toString() : null;
   const mediaItems = Array.isArray(p.mediaItems) && p.mediaItems.length
     ? p.mediaItems
     : p.mediaUrl
       ? [{ url: p.mediaUrl, mediaType: p.mediaType }]
       : [];
+  const primary = mediaItems[0];
+  const thumbnailUrl = p.thumbnail || (primary?.mediaType === "image" ? primary?.url : "") || "";
 
   return {
     id: p._id.toString(),
-    mediaUrl: mediaItems[0]?.url || p.mediaUrl,
-    mediaType: mediaItems[0]?.mediaType || p.mediaType,
+    mediaUrl: primary?.url || p.mediaUrl,
+    mediaType: primary?.mediaType || p.mediaType,
     mediaItems,
+    thumbnailUrl,
     caption: p.caption,
     hashtags: p.hashtags || [],
     location: p.location || "",
@@ -163,7 +170,7 @@ export function serializePost(p, currentUserId) {
         }
       : null,
     likeCount: p.likes?.length || 0,
-    likedByMe: !!p.likes?.some((id) => id.toString() === uid),
+    likedByMe: uid ? !!p.likes?.some((id) => id.toString() === uid) : false,
     viewCount: p.views?.length || 0,
     saveCount: p.saves?.length || 0,
     shareCount: p.shares || 0,
@@ -176,7 +183,7 @@ export function serializePost(p, currentUserId) {
       updatedAt: c.updatedAt,
       edited: c.createdAt?.getTime?.() !== c.updatedAt?.getTime?.(),
       likeCount: c.likes?.length || 0,
-      likedByMe: !!c.likes?.some((id) => id.toString() === uid),
+      likedByMe: uid ? !!c.likes?.some((id) => id.toString() === uid) : false,
       author: c.author
         ? {
             id: c.author._id.toString(),

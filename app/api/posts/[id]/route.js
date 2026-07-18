@@ -5,6 +5,23 @@ import { getCurrentUser } from "@/lib/auth";
 import { deleteMediaFile, saveMediaFiles, MAX_IMAGE_COUNT } from "@/lib/upload";
 import { serializePost } from "../route";
 
+// Public: anyone (including guests) can open a shared post link and view it.
+export async function GET(req, { params }) {
+  const { id } = await params;
+  const viewer = await getCurrentUser();
+
+  await connectDB();
+  const post = await Post.findById(id)
+    .populate("author", "username displayName avatar")
+    .populate("comments.author", "username displayName avatar")
+    .lean();
+  if (!post) {
+    return NextResponse.json({ error: "Post not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ post: serializePost(post, viewer?._id || null) });
+}
+
 export async function PATCH(req, { params }) {
   const user = await getCurrentUser();
   if (!user) {

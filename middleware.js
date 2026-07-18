@@ -4,6 +4,16 @@ import { jwtVerify } from "jose";
 const COOKIE_NAME = "lumen_session";
 const PUBLIC_PATHS = ["/login", "/register"];
 
+// Paths anyone can view without signing in (read-only browsing, Instagram-style).
+// Actions on these pages (like, comment, follow, etc.) are still gated by the
+// APIs themselves and by client-side redirects to /login.
+function isGuestViewable(pathname) {
+  if (pathname === "/" || pathname === "/reels") return true;
+  if (pathname.startsWith("/p/")) return true; // shared post permalinks
+  if (pathname.startsWith("/profile/") && !pathname.startsWith("/profile/edit")) return true;
+  return false;
+}
+
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
@@ -36,6 +46,9 @@ export async function middleware(req) {
   }
 
   if (!authed) {
+    if (isGuestViewable(pathname)) {
+      return NextResponse.next();
+    }
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);

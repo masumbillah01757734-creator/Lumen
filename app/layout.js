@@ -1,8 +1,11 @@
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Toaster from "@/components/Toaster";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 import { UserProvider } from "@/components/UserContext";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getImpersonatorId } from "@/lib/auth";
+import { connectDB } from "@/lib/db";
+import User from "@/models/User";
 
 export const metadata = {
   title: "Lumen",
@@ -21,10 +24,19 @@ export default async function RootLayout({ children }) {
     }
     : null;
 
+  const impersonatorId = await getImpersonatorId();
+  let impersonatorUsername = null;
+  if (impersonatorId) {
+    await connectDB();
+    const admin = await User.findById(impersonatorId).select("username").lean();
+    impersonatorUsername = admin?.username || null;
+  }
+
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg)" }}>
         <UserProvider user={user}>
+          {impersonatorId && <ImpersonationBanner adminUsername={impersonatorUsername} />}
           <Nav user={user} />
           <main className="flex-1 w-full">{children}</main>
           <Toaster />

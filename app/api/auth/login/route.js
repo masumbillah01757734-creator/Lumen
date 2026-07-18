@@ -35,6 +35,13 @@ export async function POST(req) {
       );
     }
 
+    if (user.banned) {
+      return NextResponse.json(
+        { error: "This account has been suspended." },
+        { status: 403 }
+      );
+    }
+
     await setSessionCookie(user._id.toString());
 
     return NextResponse.json({

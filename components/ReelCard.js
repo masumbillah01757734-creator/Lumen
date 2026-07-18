@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Volume2, VolumeX, Send, Trash2, Pencil, X, Check } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Heart, MessageCircle, Volume2, VolumeX, Send, Trash2, Pencil, X, Check, Share2 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
-import { notifyError, confirmToast } from "@/lib/toast";
+import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 
 export default function ReelCard({ post, onDeleted }) {
   const currentUser = useCurrentUser();
+  const router = useRouter();
+  const pathname = usePathname();
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hasViewed = useRef(false);
@@ -22,6 +25,29 @@ export default function ReelCard({ post, onDeleted }) {
   const [editText, setEditText] = useState("");
 
   const isMyPost = currentUser && post.author?.id === currentUser.id;
+
+  function requireAuth() {
+    if (!currentUser) {
+      router.push(`/login?next=${encodeURIComponent(pathname || "/reels")}`);
+      return false;
+    }
+    return true;
+  }
+
+  async function sharePost() {
+    const url = `${window.location.origin}/p/${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post.caption || "Check this out on Lumen", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        notifySuccess("Link copied to clipboard.");
+      }
+    } catch {
+      // user closed the native share sheet
+    }
+    fetch(`/api/posts/${post.id}/share`, { method: "POST" }).catch(() => { });
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -47,6 +73,7 @@ export default function ReelCard({ post, onDeleted }) {
   }, [post.id]);
 
   async function toggleLike() {
+    if (!requireAuth()) return;
     setLiked((v) => !v);
     setLikeCount((c) => (liked ? c - 1 : c + 1));
     try {
@@ -64,6 +91,7 @@ export default function ReelCard({ post, onDeleted }) {
 
   async function submitComment(e) {
     e.preventDefault();
+    if (!requireAuth()) return;
     if (!commentText.trim()) return;
     try {
       const res = await fetch(`/api/posts/${post.id}/comment`, {
@@ -84,6 +112,7 @@ export default function ReelCard({ post, onDeleted }) {
   }
 
   async function toggleCommentLike(comment) {
+    if (!requireAuth()) return;
     setComments((cs) =>
       cs.map((c) =>
         c.id === comment.id
@@ -171,6 +200,9 @@ export default function ReelCard({ post, onDeleted }) {
         <button onClick={() => setShowComments(true)} className="flex flex-col items-center gap-1">
           <MessageCircle size={28} strokeWidth={1.75} color="white" />
           <span className="text-xs font-medium text-white drop-shadow">{comments.length}</span>
+        </button>
+        <button onClick={sharePost} className="flex flex-col items-center gap-1">
+          <Share2 size={26} strokeWidth={1.75} color="white" />
         </button>
         {isMyPost && (
           <button

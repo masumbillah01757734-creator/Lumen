@@ -112,6 +112,32 @@ export default function AdminPage() {
     });
   }
 
+  async function loginAsUser(user) {
+    try {
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        notifyError(data.error || "Could not log in as this user.");
+        return;
+      }
+      notifySuccess(`Signed in as @${data.username}.`);
+      router.push("/");
+      router.refresh();
+    } catch {
+      notifyError("Could not log in as this user.");
+    }
+  }
+
+  function canImpersonate(user) {
+    if (!currentUser || user.id === currentUser.id) return false;
+    if (currentUser.role === "admin") return true;
+    return user.role === "user";
+  }
+
   const filteredUsers = users.filter((user) =>
     user.username?.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
@@ -192,7 +218,7 @@ export default function AdminPage() {
                   <div className="text-xs mt-1 truncate" style={{ color: "var(--muted)" }}>{user.email}</div>
                 </button>
                 {(canManageRoles || user.role !== "admin") && (
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => toggleBan(user)}
@@ -202,6 +228,16 @@ export default function AdminPage() {
                     >
                       {banningId === user.id ? "Saving…" : user.banned ? "Unban" : "Ban"}
                     </button>
+                    {canImpersonate(user) && (
+                      <button
+                        type="button"
+                        onClick={() => loginAsUser(user)}
+                        className="rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ background: "var(--surface)", color: "var(--gold)", border: "1px solid var(--border)" }}
+                      >
+                        Login as
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => deleteUser(user)}
@@ -278,6 +314,16 @@ export default function AdminPage() {
                   >
                     {banningId === selectedUser.id ? "Saving…" : selectedUser.banned ? "Unban user" : "Ban user"}
                   </button>
+                  {canImpersonate(selectedUser) && (
+                    <button
+                      type="button"
+                      onClick={() => loginAsUser(selectedUser)}
+                      className="rounded-full px-3 py-1.5 text-sm font-semibold"
+                      style={{ background: "var(--surface-2)", color: "var(--gold)", border: "1px solid var(--border)" }}
+                    >
+                      Login as this user
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => deleteUser(selectedUser)}

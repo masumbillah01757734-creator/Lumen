@@ -29,6 +29,54 @@ function formatBytes(size) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// Grabs a frame from a video file to use as its share/social-preview thumbnail
+// (social apps need a still image to render a link card, not the video itself).
+function captureVideoThumbnail(file) {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+
+    const cleanup = () => URL.revokeObjectURL(objectUrl);
+
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+      } catch {
+        cleanup();
+        resolve(null);
+      }
+    };
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            cleanup();
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.85
+        );
+      } catch {
+        cleanup();
+        resolve(null);
+      }
+    };
+    video.onerror = () => {
+      cleanup();
+      resolve(null);
+    };
+  });
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const inputRef = useRef(null);
@@ -201,6 +249,22 @@ export default function UploadPage() {
 
         setProgress(95);
 
+        // Best-effort: capture a frame so shared links show a real thumbnail
+        // instead of no image at all. If this fails, the post still gets created.
+        let thumbnailUrl = "";
+        try {
+          const thumbBlob = await captureVideoThumbnail(videoFile);
+          if (thumbBlob) {
+            const thumbForm = new FormData();
+            thumbForm.append("file", thumbBlob, "thumbnail.jpg");
+            const thumbRes = await fetch("/api/uploads/thumbnail", { method: "POST", body: thumbForm });
+            const thumbData = await thumbRes.json().catch(() => ({}));
+            if (thumbRes.ok) thumbnailUrl = thumbData.url || "";
+          }
+        } catch {
+          // no thumbnail — not fatal
+        }
+
         const postRes = await fetch("/api/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -208,6 +272,7 @@ export default function UploadPage() {
             caption,
             hashtags,
             location,
+            thumbnailUrl,
             mediaItems: [
               {
                 url: presignData.publicUrl,
