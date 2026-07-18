@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Heart, MessageCircle, Volume2, VolumeX, Send, Trash2, Pencil, X, Check, Share2 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
+import { hasViewedLocally, markViewedLocally } from "@/lib/viewedPosts";
 
 export default function ReelCard({ post, onDeleted, muted, onMuteChange }) {
   const currentUser = useCurrentUser();
@@ -57,8 +58,9 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange }) {
       ([entry]) => {
         if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
           video.play().catch(() => {});
-          if (!hasViewed.current) {
+          if (!hasViewed.current && !hasViewedLocally(post.id)) {
             hasViewed.current = true;
+            markViewedLocally(post.id);
             fetch(`/api/posts/${post.id}/view`, { method: "POST" }).catch(() => {});
           }
         } else {

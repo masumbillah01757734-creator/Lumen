@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Aperture, Upload, LogOut, User as UserIcon, Clapperboard, Shield } from "lucide-react";
 
 export default function Nav({ user }) {
-  const router = useRouter();
-
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   if (!user) {

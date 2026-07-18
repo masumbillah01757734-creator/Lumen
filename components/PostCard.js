@@ -7,6 +7,7 @@ import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Che
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 import SimpleVideo from "@/components/SimpleVideo";
+import { hasViewedLocally, markViewedLocally } from "@/lib/viewedPosts";
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -156,6 +157,8 @@ export default function PostCard({ post, onDeleted }) {
   }
 
   useEffect(() => {
+    if (hasViewedLocally(post.id)) return;
+    markViewedLocally(post.id);
     fetch(`/api/posts/${post.id}/view`, { method: "POST" })
       .then((res) => res.json())
       .then((data) => {
