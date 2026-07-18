@@ -254,7 +254,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="order-1 lg:order-2 rounded-2xl border p-3 sm:p-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+        <div className="order-1 lg:order-2 rounded-2xl border p-3 sm:p-4 h-max" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <h2 className="font-semibold mb-3" style={{ color: "var(--text)" }}>User details</h2>
           {selectedUser ? (
             <div className="space-y-3 text-sm">
