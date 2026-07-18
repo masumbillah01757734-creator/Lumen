@@ -8,8 +8,22 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
 export const metadata = {
-  title: "Lumen",
+  title: {
+    default: "Lumen",
+    template: "%s — Lumen",
+  },
   description: "Share the frame. A photo and video community.",
+  // Default link-preview image for any page that doesn't set its own
+  // (e.g. a profile page) — so sharing a plain link still shows a branded
+  // card instead of nothing.
+  openGraph: {
+    siteName: "Lumen",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "Lumen" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-default.png"],
+  },
 };
 
 export default async function RootLayout({ children }) {

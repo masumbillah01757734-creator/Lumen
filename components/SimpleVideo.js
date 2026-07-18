@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import { MediaVideo } from "@/components/Media";
 
 export default function SimpleVideo({ src, className }) {
   const videoRef = useRef(null);
@@ -19,14 +20,15 @@ export default function SimpleVideo({ src, className }) {
 
   return (
     <div className="relative w-full h-full">
-      <video
-        ref={videoRef}
+      <MediaVideo
         src={src}
+        ref={videoRef}
         muted={muted}
         playsInline
         loop
         onClick={togglePlay}
         className={className}
+        wrapperClassName="w-full h-full"
       />
       <button
         onClick={(e) => {

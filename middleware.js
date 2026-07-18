@@ -8,7 +8,7 @@ const PUBLIC_PATHS = ["/login", "/register"];
 // Actions on these pages (like, comment, follow, etc.) are still gated by the
 // APIs themselves and by client-side redirects to /login.
 function isGuestViewable(pathname) {
-  if (pathname === "/" || pathname === "/reels") return true;
+  if (pathname === "/" || pathname === "/reels" || pathname === "/search") return true;
   if (pathname.startsWith("/p/")) return true; // shared post permalinks
   if (pathname.startsWith("/profile/") && !pathname.startsWith("/profile/edit")) return true;
   return false;

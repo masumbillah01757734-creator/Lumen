@@ -17,6 +17,20 @@ export async function GET(req) {
   const type = searchParams.get("type");
   const limit = 12;
 
+  // Feed-personalization signals sent by the client (see lib/feedSession.js
+  // and lib/interest.js) — all optional, all comma-separated id/tag lists.
+  const parseList = (key, max) =>
+    (searchParams.get(key) || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .slice(0, max);
+  const seed = (searchParams.get("seed") || "").slice(0, 64) || undefined;
+  const seenFreshIds = parseList("seenFresh", 400);
+  const skippedIds = parseList("skipped", 400);
+  const interestTags = parseList("interestTags", 20);
+  const interestAuthors = parseList("interestAuthors", 20);
+
   await connectDB();
 
   const query = type === "video" || type === "image" ? { mediaType: type } : {};
@@ -25,7 +39,7 @@ export async function GET(req) {
     .populate("comments.author", "username displayName avatar")
     .lean();
 
-  const ranked = rankPosts(allPosts);
+  const ranked = rankPosts(allPosts, { seed, seenFreshIds, skippedIds, interestTags, interestAuthors });
   const start = (page - 1) * limit;
   const pageItems = ranked.slice(start, start + limit);
   const serialized = pageItems.map((p) => serializePost(p, user?._id || null));
@@ -159,6 +173,7 @@ export function serializePost(p, currentUserId) {
     hashtags: p.hashtags || [],
     location: p.location || "",
     exif: p.exif,
+    isFresh: Boolean(p.__isFresh),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
     author: p.author

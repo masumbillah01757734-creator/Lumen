@@ -45,6 +45,11 @@ export async function generateMetadata({ params }) {
     : `See this ${post.mediaType} shared by ${authorHandle} on Lumen.${tags.length ? ` ${tags.map((t) => `#${t}`).join(" ")}` : ""}`;
 
   const image = post.thumbnail || (post.mediaType === "image" ? post.mediaUrl : "");
+  // If a post somehow has no usable image (old post with no thumbnail yet,
+  // media still processing, etc.), fall back to the Lumen logo so a shared
+  // link always renders a card instead of a blank/empty preview.
+  const fallbackImage = `${siteUrl}/og-default.png`;
+  const ogImage = image || fallbackImage;
 
   return {
     title,
@@ -57,14 +62,14 @@ export async function generateMetadata({ params }) {
       url,
       siteName: "Lumen",
       type: post.mediaType === "video" ? "video.other" : "article",
-      images: image ? [{ url: image, width: 1200, height: 1200, alt: title }] : undefined,
+      images: [{ url: ogImage, width: image ? 1200 : 1200, height: image ? 1200 : 630, alt: title }],
       ...(post.mediaType === "video" ? { videos: [{ url: post.mediaUrl }] } : {}),
     },
     twitter: {
-      card: image ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: image ? [image] : undefined,
+      images: [ogImage],
     },
   };
 }

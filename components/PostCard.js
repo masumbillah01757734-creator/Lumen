@@ -7,7 +7,9 @@ import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Che
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 import SimpleVideo from "@/components/SimpleVideo";
+import { MediaImage } from "@/components/Media";
 import { hasViewedLocally, markViewedLocally } from "@/lib/viewedPosts";
+import { recordInterest } from "@/lib/interest";
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -41,8 +43,12 @@ function MediaCarousel({ items, caption }) {
     return item.mediaType === "video" ? (
       <SimpleVideo src={item.url} className="w-full max-h-150 object-contain" />
     ) : (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={item.url} alt={caption || "Post media"} className="w-full max-h-150 object-contain" />
+      <MediaImage
+        src={item.url}
+        alt={caption || "Post media"}
+        className="w-full max-h-150 object-contain"
+        wrapperClassName="w-full min-h-[220px]"
+      />
     );
   }
 
@@ -67,8 +73,12 @@ function MediaCarousel({ items, caption }) {
             {item.mediaType === "video" ? (
               <SimpleVideo src={item.url} className="w-full h-full object-cover" />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.url} alt={caption || "Post media"} className="w-full h-full object-cover" />
+              <MediaImage
+                src={item.url}
+                alt={caption || "Post media"}
+                className="w-full h-full object-cover"
+                wrapperClassName="w-full h-full"
+              />
             )}
           </div>
         ))}
@@ -101,7 +111,7 @@ function MediaCarousel({ items, caption }) {
   );
 }
 
-export default function PostCard({ post, onDeleted }) {
+export default function PostCard({ post, onDeleted, onEngaged }) {
   const currentUser = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
@@ -154,6 +164,8 @@ export default function PostCard({ post, onDeleted }) {
       // user closed the native share sheet — nothing to do
     }
     fetch(`/api/posts/${post.id}/share`, { method: "POST" }).catch(() => { });
+    recordInterest(displayPost, 2);
+    onEngaged?.();
   }
 
   useEffect(() => {
@@ -173,8 +185,13 @@ export default function PostCard({ post, onDeleted }) {
 
   async function toggleLike() {
     if (!requireAuth()) return;
-    setLiked((v) => !v);
+    const willLike = !liked;
+    setLiked(willLike);
     setLikeCount((c) => (liked ? c - 1 : c + 1));
+    if (willLike) {
+      recordInterest(displayPost, 3);
+      onEngaged?.();
+    }
     try {
       const res = await fetch(`/api/posts/${post.id}/like`, { method: "POST" });
       const data = await res.json();
@@ -203,6 +220,8 @@ export default function PostCard({ post, onDeleted }) {
       if (res.ok) {
         setComments((c) => [...c, { ...data.comment, likeCount: 0, likedByMe: false }]);
         setCommentText("");
+        recordInterest(displayPost, 5);
+        onEngaged?.();
       } else {
         notifyError(data.error);
       }

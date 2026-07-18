@@ -1,34 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { Aperture, Upload, LogOut, User as UserIcon, Clapperboard, Shield } from "lucide-react";
+import { Aperture, Upload, Search, User as UserIcon, Clapperboard, Shield } from "lucide-react";
+import SearchBar from "@/components/SearchBar";
 
 export default function Nav({ user }) {
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
-  }
-
   if (!user) {
     return (
       <header
         className="sticky top-0 z-20 border-b backdrop-blur"
         style={{ borderColor: "var(--border)", background: "rgba(20,18,15,0.85)" }}
       >
-        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-16">
-          <Link href="/" className="flex items-center gap-2 group">
+        <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 h-16">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
             <Aperture
               size={26}
               strokeWidth={1.5}
               style={{ color: "var(--accent)" }}
               className="transition-transform group-hover:rotate-45 duration-500"
             />
-            <span className="font-display text-2xl tracking-tight" style={{ color: "var(--text)" }}>
+            <span className="font-display text-2xl tracking-tight hidden xs:inline" style={{ color: "var(--text)" }}>
               Lumen
             </span>
           </Link>
 
-          <nav className="flex items-center gap-1">
+          <SearchBar className="hidden sm:block flex-1 max-w-xs" />
+
+          <nav className="flex items-center gap-1 ml-auto">
+            <Link
+              href="/search"
+              className="p-2 rounded-full transition-colors hover:bg-[var(--surface-2)] sm:hidden"
+              style={{ color: "var(--text)" }}
+              aria-label="Search"
+            >
+              <Search size={20} strokeWidth={1.75} />
+            </Link>
             <Link
               href="/reels"
               className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
@@ -62,20 +68,30 @@ export default function Nav({ user }) {
       className="sticky top-0 z-20 border-b backdrop-blur"
       style={{ borderColor: "var(--border)", background: "rgba(20,18,15,0.85)" }}
     >
-      <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-16">
-        <Link href="/" className="flex items-center gap-2 group">
+      <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 h-16">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <Aperture
             size={26}
             strokeWidth={1.5}
             style={{ color: "var(--accent)" }}
             className="transition-transform group-hover:rotate-45 duration-500"
           />
-          <span className="font-display text-2xl tracking-tight" style={{ color: "var(--text)" }}>
+          <span className="font-display text-2xl tracking-tight hidden xs:inline" style={{ color: "var(--text)" }}>
             Lumen
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <SearchBar className="hidden sm:block flex-1 max-w-xs" />
+
+        <nav className="flex items-center gap-1 ml-auto">
+          <Link
+            href="/search"
+            className="p-2 rounded-full transition-colors hover:bg-[var(--surface-2)] sm:hidden"
+            style={{ color: "var(--text)" }}
+            aria-label="Search"
+          >
+            <Search size={20} strokeWidth={1.75} />
+          </Link>
           <Link
             href="/reels"
             className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
@@ -117,13 +133,6 @@ export default function Nav({ user }) {
             )}
             <span className="hidden sm:inline">{user.username}</span>
           </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"
-            style={{ color: "var(--muted)" }}
-          >
-            <LogOut size={18} strokeWidth={1.75} />
-          </button>
         </nav>
       </div>
     </header>
