@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Check, Plus, Share2 } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, Pencil, Eye, X, Check, Plus, Share2, ArrowLeft, ArrowRight } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 import SimpleVideo from "@/components/SimpleVideo";
@@ -19,8 +19,79 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
+function MediaLightbox({ items, index, onIndexChange, onClose }) {
+  const item = items[index];
+  if (!item) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.92)" }}
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute top-4 right-4 rounded-full p-2"
+        style={{ background: "rgba(255,255,255,0.12)" }}
+      >
+        <X size={20} color="white" />
+      </button>
+
+      {items.length > 1 && (
+        <span
+          className="absolute top-4 left-4 rounded-full px-2.5 py-1 text-xs font-mono"
+          style={{ background: "rgba(255,255,255,0.12)", color: "white" }}
+        >
+          {index + 1}/{items.length}
+        </span>
+      )}
+
+      {items.length > 1 && index > 0 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onIndexChange(index - 1);
+          }}
+          aria-label="Previous"
+          className="absolute left-2 sm:left-4 rounded-full p-2"
+          style={{ background: "rgba(255,255,255,0.12)" }}
+        >
+          <ArrowLeft size={20} color="white" />
+        </button>
+      )}
+      {items.length > 1 && index < items.length - 1 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onIndexChange(index + 1);
+          }}
+          aria-label="Next"
+          className="absolute right-2 sm:right-4 rounded-full p-2"
+          style={{ background: "rgba(255,255,255,0.12)" }}
+        >
+          <ArrowRight size={20} color="white" />
+        </button>
+      )}
+
+      <div className="w-full h-full flex items-center justify-center p-4 sm:p-10" onClick={(e) => e.stopPropagation()}>
+        {item.mediaType === "video" ? (
+          <SimpleVideo src={item.url} className="max-w-full max-h-full object-contain" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.url} alt="" className="max-w-full max-h-full object-contain" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MediaCarousel({ items, caption }) {
   const [index, setIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const scrollRef = useRef(null);
 
   function scrollToIndex(i) {
@@ -37,18 +108,34 @@ function MediaCarousel({ items, caption }) {
     setIndex(Math.min(Math.max(i, 0), items.length - 1));
   }
 
+  const lightbox = lightboxOpen && (
+    <MediaLightbox
+      items={items}
+      index={index}
+      onIndexChange={setIndex}
+      onClose={() => setLightboxOpen(false)}
+    />
+  );
+
   if (items.length <= 1) {
     const item = items[0];
     if (!item) return null;
-    return item.mediaType === "video" ? (
-      <SimpleVideo src={item.url} className="w-full max-h-150 object-contain" />
-    ) : (
-      <MediaImage
-        src={item.url}
-        alt={caption || "Post media"}
-        className="w-full max-h-150 object-contain"
-        wrapperClassName="w-full min-h-[220px]"
-      />
+    return (
+      <>
+        {item.mediaType === "video" ? (
+          <SimpleVideo src={item.url} className="w-full max-h-150 object-contain" />
+        ) : (
+          <button type="button" onClick={() => setLightboxOpen(true)} className="w-full cursor-zoom-in">
+            <MediaImage
+              src={item.url}
+              alt={caption || "Post media"}
+              className="w-full max-h-150 object-contain"
+              wrapperClassName="w-full min-h-[220px]"
+            />
+          </button>
+        )}
+        {lightbox}
+      </>
     );
   }
 
@@ -68,7 +155,11 @@ function MediaCarousel({ items, caption }) {
         {items.map((item, i) => (
           <div
             key={`${item.url}-${i}`}
-            className="w-full shrink-0 snap-center aspect-square flex items-center justify-center bg-black"
+            className="w-full shrink-0 snap-center aspect-square flex items-center justify-center bg-black cursor-zoom-in"
+            onClick={() => {
+              setIndex(i);
+              setLightboxOpen(true);
+            }}
           >
             {item.mediaType === "video" ? (
               <SimpleVideo src={item.url} className="w-full h-full object-cover" />
@@ -96,7 +187,10 @@ function MediaCarousel({ items, caption }) {
           <button
             key={i}
             type="button"
-            onClick={() => scrollToIndex(i)}
+            onClick={(e) => {
+              e.stopPropagation();
+              scrollToIndex(i);
+            }}
             aria-label={`Go to media ${i + 1}`}
             className="rounded-full transition-all"
             style={{
@@ -107,6 +201,7 @@ function MediaCarousel({ items, caption }) {
           />
         ))}
       </div>
+      {lightbox}
     </div>
   );
 }

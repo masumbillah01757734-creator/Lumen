@@ -140,6 +140,12 @@ export default function UploadPage() {
       url: URL.createObjectURL(normalized[0]),
       size: normalized[0].size,
     };
+    const nextPreviews = normalized.map((file) => ({
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      size: file.size,
+    }));
 
     if (replaceIndex !== null) {
       setFiles((current) => {
@@ -165,13 +171,13 @@ export default function UploadPage() {
 
     if (currentSelection.length && currentType !== nextType) {
       setFiles(normalized);
-      setPreviews([nextPreview]);
+      setPreviews(nextPreviews);
       setError("");
       return;
     }
 
     setFiles((current) => [...current, ...normalized]);
-    setPreviews((current) => [...current, nextPreview]);
+    setPreviews((current) => [...current, ...nextPreviews]);
     setError("");
   }
 
