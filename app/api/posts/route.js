@@ -34,14 +34,36 @@ export async function GET(req) {
   await connectDB();
 
   const query = type === "video" || type === "image" ? { mediaType: type } : {};
-  const allPosts = await Post.find(query)
+
+  // Ranking needs to look at every post to decide order, but it only needs
+  // counts/ids — not full documents or populated comments. Pulling every
+  // post's full comments+author data on every request (even page 1) is what
+  // was making the feed slow to load. So: rank using a lightweight
+  // projection first, then only fully populate the ~12 posts that will
+  // actually be shown on this page.
+  const lightPosts = await Post.find(query)
+    .select(
+      "createdAt author hashtags likes comments views anonymousViews saves saveCount shares shareCount profileVisits profileVisitCount watchTimeMs"
+    )
+    .lean();
+
+  const ranked = rankPosts(lightPosts, { seed, seenFreshIds, skippedIds, interestTags, interestAuthors });
+  const start = (page - 1) * limit;
+  const pageSlice = ranked.slice(start, start + limit);
+  const freshById = new Map(pageSlice.map((p) => [p._id.toString(), Boolean(p.__isFresh)]));
+  const pageIds = pageSlice.map((p) => p._id);
+
+  const fullPosts = await Post.find({ _id: { $in: pageIds } })
     .populate("author", "username displayName avatar")
     .populate("comments.author", "username displayName avatar")
     .lean();
+  const fullById = new Map(fullPosts.map((p) => [p._id.toString(), p]));
 
-  const ranked = rankPosts(allPosts, { seed, seenFreshIds, skippedIds, interestTags, interestAuthors });
-  const start = (page - 1) * limit;
-  const pageItems = ranked.slice(start, start + limit);
+  const pageItems = pageIds
+    .map((id) => fullById.get(id.toString()))
+    .filter(Boolean)
+    .map((p) => Object.assign(p, { __isFresh: freshById.get(p._id.toString()) }));
+
   const serialized = pageItems.map((p) => serializePost(p, user?._id || null));
 
   return NextResponse.json({
