@@ -4,7 +4,7 @@ import Post from "@/models/Post";
 import { getCurrentUser } from "@/lib/auth";
 import { saveMediaFiles, MAX_IMAGE_COUNT } from "@/lib/upload";
 import { generateExif } from "@/lib/exif";
-import { rankPosts } from "@/lib/ranking";
+import { rankPosts, rankReels } from "@/lib/ranking";
 
 export async function GET(req) {
   // Guests can browse the feed and reels read-only (like Instagram); actions
@@ -15,6 +15,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const type = searchParams.get("type");
+  const mode = searchParams.get("mode");
   const limit = 12;
 
   // Feed-personalization signals sent by the client (see lib/feedSession.js
@@ -30,6 +31,18 @@ export async function GET(req) {
   const skippedIds = parseList("skipped", 400);
   const interestTags = parseList("interestTags", 20);
   const interestAuthors = parseList("interestAuthors", 20);
+
+  // Reels sends "id:timestamp" pairs (see lib/reelsSession.js) of clips this
+  // viewer already watched, so the reels ranking can cool them down instead
+  // of resurfacing them right away.
+  const watchedRecently = new Map(
+    (searchParams.get("watched") || "")
+      .split(",")
+      .map((pair) => pair.split(":"))
+      .filter(([id, ts]) => id && ts && Number.isFinite(Number(ts)))
+      .slice(0, 500)
+      .map(([id, ts]) => [id, Number(ts)])
+  );
 
   await connectDB();
 
@@ -47,7 +60,10 @@ export async function GET(req) {
     )
     .lean();
 
-  const ranked = rankPosts(lightPosts, { seed, seenFreshIds, skippedIds, interestTags, interestAuthors });
+  const ranked =
+    mode === "reels"
+      ? rankReels(lightPosts, { seed, watchedRecently })
+      : rankPosts(lightPosts, { seed, seenFreshIds, skippedIds, interestTags, interestAuthors });
   const start = (page - 1) * limit;
   const pageSlice = ranked.slice(start, start + limit);
   const freshById = new Map(pageSlice.map((p) => [p._id.toString(), Boolean(p.__isFresh)]));
@@ -70,6 +86,7 @@ export async function GET(req) {
     posts: serialized,
     page,
     hasMore: start + limit < ranked.length,
+    totalCount: ranked.length,
     viewerSignedIn: Boolean(user),
   });
 }

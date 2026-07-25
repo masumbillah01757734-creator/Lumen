@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 import { hasViewedLocally, markViewedLocally } from "@/lib/viewedPosts";
 
-export default function ReelCard({ post, onDeleted, muted, onMuteChange }) {
+export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatched }) {
   const currentUser = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
@@ -63,6 +63,7 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange }) {
             markViewedLocally(post.id);
             fetch(`/api/posts/${post.id}/view`, { method: "POST" }).catch(() => {});
           }
+          onWatched?.(post.id);
         } else {
           video.pause();
         }
