@@ -16,7 +16,7 @@ export async function GET(req, { params }) {
 
   const posts = await Post.find({ author: profile._id })
     .sort({ createdAt: -1 })
-    .select("mediaUrl mediaType likes comments createdAt")
+    .select("mediaUrl mediaType thumbnail likes comments createdAt")
     .lean();
 
   return NextResponse.json({
@@ -38,6 +38,7 @@ export async function GET(req, { params }) {
       id: p._id.toString(),
       mediaUrl: p.mediaUrl,
       mediaType: p.mediaType,
+      thumbnailUrl: p.thumbnail || (p.mediaType === "image" ? p.mediaUrl : "") || "",
       likeCount: p.likes?.length || 0,
       commentCount: p.comments?.length || 0,
       createdAt: p.createdAt,

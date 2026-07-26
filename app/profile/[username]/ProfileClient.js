@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
-import { MediaImage, MediaVideo } from "@/components/Media";
+import { MediaImage } from "@/components/Media";
 
 const TABS = [
   { key: "all", label: "All", icon: Grid3x3 },
@@ -37,7 +37,12 @@ function PostTile({ post, isMe, username, onDelete }) {
     >
       {post.mediaType === "video" ? (
         <>
-          <MediaVideo src={post.mediaUrl} className="w-full h-full object-cover" wrapperClassName="w-full h-full" muted />
+          <MediaImage
+            src={post.thumbnailUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            wrapperClassName="w-full h-full"
+          />
           <Video size={16} className="absolute top-1.5 right-1.5 text-white drop-shadow pointer-events-none" />
         </>
       ) : (
