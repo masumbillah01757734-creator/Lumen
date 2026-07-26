@@ -300,12 +300,14 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
         loop
         muted={muted}
         playsInline
+        draggable={false}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endHold}
         onPointerCancel={endHold}
         onPointerLeave={endHold}
-        style={{ touchAction: "pan-y" }}
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ touchAction: "pan-y", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
         className="w-full h-full object-contain cursor-pointer"
       />
 
