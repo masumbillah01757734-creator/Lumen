@@ -370,7 +370,7 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
 
       {/* Bottom author + caption overlay */}
       <div
-        className="absolute left-0 right-16 bottom-0 p-4"
+        className="absolute left-0 right-16 bottom-0 p-4 w-[97.5vw]"
         style={{
           background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
