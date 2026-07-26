@@ -23,6 +23,17 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
   const [commentText, setCommentText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [speedLevel, setSpeedLevel] = useState(0); // 0 = normal (1x), 1 = 2x forward, -1 = rewinding
+
+  const SPEEDS = [1, 2];
+  const holdTimerRef = useRef(null);
+  const isHoldingRef = useRef(false);
+  const startXRef = useRef(0);
+  const pointerIdRef = useRef(null);
+  const rewindActiveRef = useRef(false);
+  const rewindRateRef = useRef(1);
+  const rafIdRef = useRef(null);
+  const lastFrameTimeRef = useRef(0);
 
   const isMyPost = currentUser && post.author?.id === currentUser.id;
 
@@ -48,6 +59,119 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
     }
     fetch(`/api/posts/${post.id}/share`, { method: "POST" }).catch(() => { });
   }
+
+  // Press-and-hold gesture:
+  //  - hold (no drag): plays forward at 2x
+  //  - drag right while holding: eases back down to normal (1x) forward speed
+  //  - drag left past a threshold while holding: actually scrubs the video
+  //    backward (real rewind, not just a slower/faster forward speed) —
+  //    the further left, the faster the rewind
+  //  - release: resumes normal forward playback at 1x from wherever it landed
+  //  - a quick tap with no hold/drag still just toggles mute
+  const STEP_PX = 50;
+  const REWIND_THRESHOLD_PX = 70;
+  const MAX_REWIND_RATE = 4;
+
+  function clearHoldTimer() {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }
+
+  function stepRewind(now) {
+    const video = videoRef.current;
+    if (!video || !rewindActiveRef.current) {
+      rafIdRef.current = null;
+      return;
+    }
+    const dt = (now - lastFrameTimeRef.current) / 1000;
+    lastFrameTimeRef.current = now;
+    video.currentTime = Math.max(0, video.currentTime - rewindRateRef.current * dt);
+    rafIdRef.current = requestAnimationFrame(stepRewind);
+  }
+
+  function startRewind() {
+    if (rewindActiveRef.current) return;
+    rewindActiveRef.current = true;
+    const video = videoRef.current;
+    if (video) video.pause();
+    lastFrameTimeRef.current = performance.now();
+    rafIdRef.current = requestAnimationFrame(stepRewind);
+  }
+
+  function stopRewind({ resume } = { resume: false }) {
+    rewindActiveRef.current = false;
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    if (resume) {
+      const video = videoRef.current;
+      if (video) video.play().catch(() => {});
+    }
+  }
+
+  function handlePointerDown(e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerIdRef.current = e.pointerId;
+    startXRef.current = e.clientX;
+    clearHoldTimer();
+    holdTimerRef.current = setTimeout(() => {
+      isHoldingRef.current = true;
+      setSpeedLevel(1);
+      const video = videoRef.current;
+      if (video) video.playbackRate = SPEEDS[1];
+    }, 250);
+  }
+
+  function handlePointerMove(e) {
+    if (!isHoldingRef.current || pointerIdRef.current !== e.pointerId) return;
+    e.preventDefault();
+    const deltaX = e.clientX - startXRef.current;
+
+    if (deltaX <= -REWIND_THRESHOLD_PX) {
+      startRewind();
+      const overshoot = Math.abs(deltaX) - REWIND_THRESHOLD_PX;
+      rewindRateRef.current = Math.min(MAX_REWIND_RATE, 1 + overshoot / 60);
+      setSpeedLevel(-1);
+      return;
+    }
+
+    if (rewindActiveRef.current) {
+      stopRewind({ resume: true });
+    }
+
+    const level = Math.max(0, Math.min(1, 1 - Math.round(deltaX / STEP_PX)));
+    setSpeedLevel(level);
+    const video = videoRef.current;
+    if (video) video.playbackRate = SPEEDS[level];
+  }
+
+  function endHold(e) {
+    if (pointerIdRef.current !== null && e && e.pointerId !== pointerIdRef.current) return;
+    clearHoldTimer();
+    const wasHolding = isHoldingRef.current;
+    const wasRewinding = rewindActiveRef.current;
+    isHoldingRef.current = false;
+    pointerIdRef.current = null;
+    stopRewind({ resume: wasRewinding });
+    const video = videoRef.current;
+    if (wasHolding) {
+      if (video) video.playbackRate = 1;
+      setSpeedLevel(0);
+    } else {
+      onMuteChange(!muted);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      clearHoldTimer();
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -168,7 +292,7 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
     <div
       ref={containerRef}
       className="snap-start shrink-0 w-full h-full relative flex items-center justify-center"
-      style={{ background: "#000" }}
+      style={{ background: "#000", scrollSnapStop: "always" }}
     >
       <video
         ref={videoRef}
@@ -176,9 +300,27 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
         loop
         muted={muted}
         playsInline
-        onClick={() => onMuteChange(!muted)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={endHold}
+        onPointerCancel={endHold}
+        onPointerLeave={endHold}
+        style={{ touchAction: "pan-y" }}
         className="w-full h-full object-contain cursor-pointer"
       />
+
+      {speedLevel !== 0 && (
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full text-sm font-semibold text-white pointer-events-none flex items-center gap-1.5"
+          style={{ background: "rgba(0,0,0,0.55)" }}
+        >
+          {speedLevel === -1 ? (
+            <>⏪ Rewinding</>
+          ) : (
+            <>{SPEEDS[speedLevel]}x speed</>
+          )}
+        </div>
+      )}
 
       <button
         onClick={() => onMuteChange(!muted)}
@@ -189,7 +331,10 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
       </button>
 
       {/* Right action column */}
-      <div className="absolute right-3 bottom-24 flex flex-col items-center gap-5">
+      <div
+        className="absolute right-3 flex flex-col items-center gap-5"
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         <button onClick={toggleLike} className="flex flex-col items-center gap-1">
           <Heart
             size={30}
@@ -223,10 +368,13 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
 
       {/* Bottom author + caption overlay */}
       <div
-        className="absolute left-0 right-16 bottom-0 p-4 pb-6"
-        style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.75))" }}
+        className="absolute left-0 right-16 bottom-0 p-4"
+        style={{
+          background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
+          paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
+        }}
       >
-        <Link href={`/profile/${post.author?.username}`} className="flex items-center gap-2 mb-1.5">
+        <Link href={`/profile/${post.author?.username}`} className="flex items-center gap-2 mb-1.5 min-w-0">
           <div
             className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display text-sm shrink-0"
             style={{ background: "var(--surface-2)", color: "var(--gold)" }}
@@ -238,7 +386,7 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
               post.author?.displayName?.[0]?.toUpperCase() || "?"
             )}
           </div>
-          <span className="text-sm font-semibold text-white">{post.author?.username}</span>
+          <span className="text-sm font-semibold text-white truncate">{post.author?.username}</span>
         </Link>
         {post.caption && <p className="text-sm text-white/90">{post.caption}</p>}
       </div>

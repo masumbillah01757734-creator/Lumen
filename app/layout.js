@@ -7,6 +7,10 @@ import { getCurrentUser, getImpersonatorId } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
+export const viewport = {
+  viewportFit: "cover",
+};
+
 export const metadata = {
   title: {
     default: "Lumen",

@@ -117,7 +117,7 @@ export default function ReelsPage() {
   return (
     <div
       className="w-full overflow-y-scroll snap-y snap-mandatory"
-      style={{ height: "calc(100vh - 4rem)" }}
+      style={{ height: "calc(100dvh - 4rem)" }}
     >
       {reels.map((post) => (
         <ReelCard
