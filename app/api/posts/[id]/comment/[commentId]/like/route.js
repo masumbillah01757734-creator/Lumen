@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Post from "@/models/Post";
 import { getCurrentUser } from "@/lib/auth";
-import { createNotification, removeLikeNotification } from "@/lib/notify";
 
 export async function POST(req, { params }) {
   const user = await getCurrentUser();
@@ -29,25 +28,6 @@ export async function POST(req, { params }) {
     comment.likes.push(user._id);
   }
   await post.save();
-
-  if (already) {
-    await removeLikeNotification({
-      recipientId: comment.author,
-      senderId: user._id,
-      type: "like_comment",
-      postId: post._id,
-      commentId: comment._id.toString(),
-    });
-  } else {
-    await createNotification({
-      recipientId: comment.author,
-      senderId: user._id,
-      type: "like_comment",
-      postId: post._id,
-      commentId: comment._id.toString(),
-      commentText: comment.text,
-    });
-  }
 
   return NextResponse.json({ liked: !already, likeCount: comment.likes.length });
 }

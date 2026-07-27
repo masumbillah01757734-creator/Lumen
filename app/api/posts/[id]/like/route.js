@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Post from "@/models/Post";
+import Notification from "@/models/Notification";
 import { getCurrentUser } from "@/lib/auth";
-import { createNotification, removeLikeNotification } from "@/lib/notify";
 
 export async function POST(req, { params }) {
   const user = await getCurrentUser();
@@ -26,21 +26,27 @@ export async function POST(req, { params }) {
   }
   await post.save();
 
-  if (already) {
-    await removeLikeNotification({
-      recipientId: post.author,
-      senderId: user._id,
-      type: "like_post",
-      postId: post._id,
-    });
-  } else {
-    await createNotification({
-      recipientId: post.author,
-      senderId: user._id,
-      type: "like_post",
-      postId: post._id,
-    });
+  const nowLiked = !already;
+  const isOwnPost = post.author.toString() === uid;
+
+  if (!isOwnPost) {
+    if (nowLiked) {
+      // Avoid stacking duplicate "X liked your post" entries if someone
+      // unlikes and relikes repeatedly — just bump the existing one.
+      await Notification.findOneAndUpdate(
+        { recipient: post.author, sender: user._id, post: post._id, type: "like" },
+        { $set: { read: false } },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    } else {
+      await Notification.deleteOne({
+        recipient: post.author,
+        sender: user._id,
+        post: post._id,
+        type: "like",
+      });
+    }
   }
 
-  return NextResponse.json({ liked: !already, likeCount: post.likes.length });
+  return NextResponse.json({ liked: nowLiked, likeCount: post.likes.length });
 }

@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   Heart,
   MessageCircle,
-  Eye,
   Video,
   Trash2,
   Upload,
@@ -18,6 +17,7 @@ import {
   Image as ImageIcon,
   Film,
   Grid3x3,
+  Eye,
   BarChart3,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
@@ -29,6 +29,12 @@ const TABS = [
   { key: "image", label: "Photos", icon: ImageIcon },
   { key: "video", label: "Videos", icon: Film },
 ];
+
+function formatCount(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `${n}`;
+}
 
 function PostTile({ post, isMe, username, onDelete }) {
   return (
@@ -57,8 +63,16 @@ function PostTile({ post, isMe, username, onDelete }) {
         <span className="flex items-center gap-1">
           <MessageCircle size={16} fill="white" /> {post.commentCount}
         </span>
+      </div>
+      <div
+        className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-2 py-1.5 text-white text-xs font-semibold pointer-events-none"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0))" }}
+      >
         <span className="flex items-center gap-1">
-          <Eye size={16} /> {post.viewCount}
+          <Heart size={13} fill="white" /> {formatCount(post.likeCount)}
+        </span>
+        <span className="flex items-center gap-1">
+          <Eye size={13} /> {formatCount(post.viewCount)}
         </span>
       </div>
       {isMe && (
