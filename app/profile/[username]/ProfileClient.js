@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Heart,
   MessageCircle,
+  Eye,
   Video,
   Trash2,
   Upload,
@@ -17,6 +18,7 @@ import {
   Image as ImageIcon,
   Film,
   Grid3x3,
+  BarChart3,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/UserContext";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
@@ -54,6 +56,9 @@ function PostTile({ post, isMe, username, onDelete }) {
         </span>
         <span className="flex items-center gap-1">
           <MessageCircle size={16} fill="white" /> {post.commentCount}
+        </span>
+        <span className="flex items-center gap-1">
+          <Eye size={16} /> {post.viewCount}
         </span>
       </div>
       {isMe && (
@@ -241,6 +246,13 @@ export default function ProfileClient() {
                     style={{ background: "var(--accent)", color: "#14120f" }}
                   >
                     <Upload size={15} /> Upload
+                  </Link>
+                  <Link
+                    href="/analytics"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold"
+                    style={{ background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
+                  >
+                    <BarChart3 size={15} /> Analytics
                   </Link>
                   {canModerate && (
                     <Link

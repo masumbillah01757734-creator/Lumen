@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Aperture, Upload, Search, User as UserIcon, Clapperboard, Shield } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function Nav({ user }) {
   if (!user) {
@@ -118,6 +119,7 @@ export default function Nav({ user }) {
               <span className="hidden sm:inline">Admin</span>
             </Link>
           )}
+          <NotificationBell />
           <Link
             href={`/profile/${user.username}`}
             className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-colors hover:bg-[var(--surface-2)]"

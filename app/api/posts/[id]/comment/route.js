@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Post from "@/models/Post";
 import { getCurrentUser } from "@/lib/auth";
+import { createNotification } from "@/lib/notify";
 
 export async function POST(req, { params }) {
   const user = await getCurrentUser();
@@ -25,6 +26,15 @@ export async function POST(req, { params }) {
   await post.save();
 
   const newComment = post.comments[post.comments.length - 1];
+
+  await createNotification({
+    recipientId: post.author,
+    senderId: user._id,
+    type: "comment_post",
+    postId: post._id,
+    commentId: newComment._id.toString(),
+    commentText: newComment.text,
+  });
 
   return NextResponse.json({
     comment: {
