@@ -31,8 +31,10 @@ export async function GET(req, { params }) {
     .populate("comments.author", "username displayName avatar")
     .lean();
 
+  const followingSet = new Set((viewer?.following || []).map((id) => id.toString()));
+
   return NextResponse.json({
-    posts: posts.map((p) => serializePost(p, viewer?._id || null)),
+    posts: posts.map((p) => serializePost(p, viewer?._id || null, followingSet)),
     page,
     hasMore: page * limit < total,
   });

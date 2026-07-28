@@ -62,5 +62,6 @@ export async function GET() {
     },
     topPosts,
     recentPosts: withCounts.slice(0, 8),
+    posts: withCounts,
   });
 }

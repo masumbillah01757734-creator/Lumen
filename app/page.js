@@ -107,6 +107,16 @@ export default function FeedPage() {
     loadPage(1, false);
   }, [loadPage]);
 
+  // Hide the page scrollbar only while this page is mounted.
+  useEffect(() => {
+    document.documentElement.classList.add("hide-scrollbar");
+    document.body.classList.add("hide-scrollbar");
+    return () => {
+      document.documentElement.classList.remove("hide-scrollbar");
+      document.body.classList.remove("hide-scrollbar");
+    };
+  }, []);
+
   useEffect(() => {
     if (!hasMore || loadingMore) return;
     const el = sentinelRef.current;

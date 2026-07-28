@@ -69,11 +69,46 @@ function TopPostRow({ post, rank }) {
   );
 }
 
+const SORT_OPTIONS = [
+  { value: "top", label: "Top (likes + views)" },
+  { value: "likes", label: "Most liked" },
+  { value: "views", label: "Most viewed" },
+  { value: "comments", label: "Most commented" },
+  { value: "saves", label: "Most saved" },
+  { value: "shares", label: "Most shared" },
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+];
+
+function sortPosts(posts, sortBy) {
+  const list = [...posts];
+  switch (sortBy) {
+    case "likes":
+      return list.sort((a, b) => b.likeCount - a.likeCount);
+    case "views":
+      return list.sort((a, b) => b.viewCount - a.viewCount);
+    case "comments":
+      return list.sort((a, b) => b.commentCount - a.commentCount);
+    case "saves":
+      return list.sort((a, b) => b.saveCount - a.saveCount);
+    case "shares":
+      return list.sort((a, b) => b.shareCount - a.shareCount);
+    case "newest":
+      return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    case "oldest":
+      return list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    case "top":
+    default:
+      return list.sort((a, b) => b.likeCount + b.viewCount - (a.likeCount + a.viewCount));
+  }
+}
+
 export default function AnalyticsClient() {
   const router = useRouter();
   const currentUser = useCurrentUser();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [sortBy, setSortBy] = useState("top");
 
   useEffect(() => {
     if (currentUser === null) {
@@ -107,7 +142,8 @@ export default function AnalyticsClient() {
     );
   }
 
-  const { totals, topPosts, recentPosts } = data;
+  const { totals, posts } = data;
+  const sortedPosts = sortPosts(posts || [], sortBy);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -151,37 +187,35 @@ export default function AnalyticsClient() {
         className="rounded-2xl border p-4 sm:p-5 mt-6"
         style={{ background: "var(--surface)", borderColor: "var(--border)" }}
       >
-        <h2 className="font-semibold mb-2" style={{ color: "var(--text)" }}>
-          Your top posts
-        </h2>
-        {topPosts.length === 0 ? (
+        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <h2 className="font-semibold" style={{ color: "var(--text)" }}>
+            Your posts
+          </h2>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="text-xs px-2.5 py-1.5 rounded-full border outline-none"
+            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {sortedPosts.length === 0 ? (
           <p className="text-sm py-4" style={{ color: "var(--muted)" }}>
             Post something to start seeing your stats here.
           </p>
         ) : (
           <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {topPosts.map((post, i) => (
+            {sortedPosts.map((post, i) => (
               <TopPostRow key={post.id} post={post} rank={i + 1} />
             ))}
           </div>
         )}
       </div>
-
-      {recentPosts.length > 0 && (
-        <div
-          className="rounded-2xl border p-4 sm:p-5 mt-4"
-          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-        >
-          <h2 className="font-semibold mb-2" style={{ color: "var(--text)" }}>
-            Recent posts
-          </h2>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {recentPosts.map((post, i) => (
-              <TopPostRow key={post.id} post={post} rank={i + 1} />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

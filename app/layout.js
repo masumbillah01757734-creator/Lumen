@@ -7,6 +7,7 @@ import { getCurrentUser, getImpersonatorId } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import AdSlot from "@/components/ads/AdSlot";
+import PopunderActivator from "@/components/ads/PopunderActivator";
 
 export const viewport = {
   viewportFit: "cover",
@@ -59,6 +60,7 @@ export default async function RootLayout({ children }) {
           <Nav user={user} />
           <main className="flex-1 w-full pb-16">{children}</main>
           <Toaster />
+          <PopunderActivator />
 
           {/* Site-wide sticky banner (320x50 mobile ad unit) */}
           <div

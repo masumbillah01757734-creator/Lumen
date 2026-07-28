@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, Clapperboard, Loader2 } from "lucide-react";
 import ReelCard from "@/components/ReelCard";
+import ReelImageAd from "@/components/ads/ReelImageAd";
 import { notifyError } from "@/lib/toast";
 import { getReelsSeed, reshuffleReelsSeed, watchedQueryParam, markReelWatched } from "@/lib/reelsSession";
 
@@ -12,6 +13,30 @@ function buildReelsQuery(page, seed) {
   const watched = watchedQueryParam();
   if (watched) params.set("watched", watched);
   return params.toString();
+}
+
+// Decides which reel indices get an image ad inserted right after them.
+// Gap between ads is randomized between 3 and 5 reels each time, and the
+// choice for a given index is only ever made once (refs persist it) so
+// scrolling back up never shows ads jumping around.
+function useAdPositions(count) {
+  const positionsRef = useRef(new Set());
+  const computedUpToRef = useRef(0);
+  const nextGapRef = useRef(3 + Math.floor(Math.random() * 3));
+  const sinceLastRef = useRef(0);
+
+  if (count > computedUpToRef.current) {
+    for (let i = computedUpToRef.current; i < count; i++) {
+      sinceLastRef.current += 1;
+      if (sinceLastRef.current >= nextGapRef.current) {
+        positionsRef.current.add(i);
+        sinceLastRef.current = 0;
+        nextGapRef.current = 3 + Math.floor(Math.random() * 3);
+      }
+    }
+    computedUpToRef.current = count;
+  }
+  return positionsRef.current;
 }
 
 export default function ReelsPage() {
@@ -85,6 +110,8 @@ export default function ReelsPage() {
     markReelWatched(id);
   }
 
+  const adPositions = useAdPositions(reels?.length || 0);
+
   if (reels === null) {
     return (
       <p className="text-center text-sm mt-16" style={{ color: "var(--muted)" }}>
@@ -116,18 +143,20 @@ export default function ReelsPage() {
 
   return (
     <div
-      className="w-full overflow-y-scroll snap-y snap-mandatory"
+      className="w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar"
       style={{ height: "calc(100dvh - 4rem)" }}
     >
-      {reels.map((post) => (
-        <ReelCard
-          key={post.id}
-          post={post}
-          onDeleted={handleDeleted}
-          onWatched={handleWatched}
-          muted={muted}
-          onMuteChange={setMuted}
-        />
+      {reels.map((post, i) => (
+        <div key={post.id} className="contents">
+          <ReelCard
+            post={post}
+            onDeleted={handleDeleted}
+            onWatched={handleWatched}
+            muted={muted}
+            onMuteChange={setMuted}
+          />
+          {adPositions.has(i) && <ReelImageAd key={`ad-${i}`} />}
+        </div>
       ))}
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loadingMore && (

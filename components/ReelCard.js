@@ -18,6 +18,8 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
 
   const [liked, setLiked] = useState(post.likedByMe);
   const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [following, setFollowing] = useState(post.author?.isFollowing || false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [comments, setComments] = useState(post.comments || []);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -198,6 +200,28 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
     return () => observer.disconnect();
   }, [post.id]);
 
+  async function toggleFollow() {
+    if (!requireAuth()) return;
+    if (followLoading) return;
+    setFollowLoading(true);
+    setFollowing((v) => !v);
+    try {
+      const res = await fetch(`/api/users/${post.author?.username}/follow`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setFollowing(data.following);
+      } else {
+        setFollowing((v) => !v);
+        notifyError(data.error);
+      }
+    } catch {
+      setFollowing((v) => !v);
+      notifyError("Couldn't update follow status.");
+    } finally {
+      setFollowLoading(false);
+    }
+  }
+
   async function toggleLike() {
     if (!requireAuth()) return;
     setLiked((v) => !v);
@@ -301,6 +325,8 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
         muted={muted}
         playsInline
         draggable={false}
+        controlsList="nodownload noremoteplayback"
+        disablePictureInPicture
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endHold}
@@ -332,10 +358,10 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
         {muted ? <VolumeX size={18} color="white" /> : <Volume2 size={18} color="white" />}
       </button>
 
-      {/* Right action column */}
+      {/* Right action column — raised extra to clear the sticky bottom ad bar */}
       <div
         className="absolute right-3 flex flex-col items-center gap-5"
-        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}
+        style={{ bottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <button onClick={toggleLike} className="flex flex-col items-center gap-1">
           <Heart
@@ -368,28 +394,45 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
         )}
       </div>
 
-      {/* Bottom author + caption overlay */}
+      {/* Bottom author + caption overlay — raised extra to clear the sticky bottom ad bar */}
       <div
-        className="absolute left-0 right-16 bottom-0 p-4 w-[97.5vw]"
+        className="absolute left-0 right-16 p-4 w-[97.5vw]"
         style={{
+          bottom: "calc(2.5rem + env(safe-area-inset-bottom, 0px))",
           background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
-          paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
+          paddingBottom: "1rem",
         }}
       >
-        <Link href={`/profile/${post.author?.username}`} className="flex items-center gap-2 mb-1.5 min-w-0">
-          <div
-            className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display text-sm shrink-0"
-            style={{ background: "var(--surface-2)", color: "var(--gold)" }}
-          >
-            {post.author?.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.author.avatar} alt="" className="w-full h-full object-cover" />
-            ) : (
-              post.author?.displayName?.[0]?.toUpperCase() || "?"
-            )}
-          </div>
-          <span className="text-sm font-semibold text-white truncate">{post.author?.username}</span>
-        </Link>
+        <div className="flex items-center gap-2 mb-1.5 min-w-0">
+          <Link href={`/profile/${post.author?.username}`} className="flex items-center gap-2 min-w-0">
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display text-sm shrink-0"
+              style={{ background: "var(--surface-2)", color: "var(--gold)" }}
+            >
+              {post.author?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={post.author.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                post.author?.displayName?.[0]?.toUpperCase() || "?"
+              )}
+            </div>
+            <span className="text-sm font-semibold text-white truncate">{post.author?.username}</span>
+          </Link>
+          {!isMyPost && (
+            <button
+              onClick={toggleFollow}
+              disabled={followLoading}
+              className="px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 disabled:opacity-60"
+              style={
+                following
+                  ? { background: "rgba(255,255,255,0.15)", color: "white" }
+                  : { background: "var(--accent)", color: "#14120f" }
+              }
+            >
+              {following ? "Following" : "Follow"}
+            </button>
+          )}
+        </div>
         {post.caption && <p className="text-sm text-white/90">{post.caption}</p>}
       </div>
 
