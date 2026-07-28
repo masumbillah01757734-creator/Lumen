@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, Loader2 } from "lucide-react";
 import PostCard from "@/components/PostCard";
+import AdSlot from "@/components/ads/AdSlot";
+import NativeBanner from "@/components/ads/NativeBanner";
 import { getInterestProfile } from "@/lib/interest";
 import { getSessionSeed, getSeenFreshIds, markSeenFresh, getSkippedIds, markSkipped, clearSkipped } from "@/lib/feedSession";
 
@@ -164,9 +166,24 @@ export default function FeedPage() {
         </div>
       )}
 
-      {posts?.map((post) => (
-        <div key={post.id} ref={(el) => observePost(el, post.id)}>
-          <PostCard post={post} onDeleted={handleDeleted} onEngaged={() => handleEngaged(post.id)} />
+      {posts?.length > 0 && (
+        <div className="mb-6 flex flex-col items-center gap-3">
+          <AdSlot adKey="abba95b767a32c84ec88caef19fb84e7" width={728} height={90} />
+          <NativeBanner />
+        </div>
+      )}
+
+      {posts?.map((post, i) => (
+        <div key={post.id}>
+          <div ref={(el) => observePost(el, post.id)}>
+            <PostCard post={post} onDeleted={handleDeleted} onEngaged={() => handleEngaged(post.id)} />
+          </div>
+          {/* Box ad every 4 posts, skipping the very first slot */}
+          {i > 0 && i % 4 === 0 && (
+            <div className="flex justify-center my-4">
+              <AdSlot adKey="9135385068052eb5c22584e752f8eba7" width={300} height={250} />
+            </div>
+          )}
         </div>
       ))}
 
