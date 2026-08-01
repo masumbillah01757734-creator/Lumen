@@ -38,7 +38,6 @@ html, body {
 }
 
 input:focus, textarea:focus, button:focus-visible, a:focus-visible {
-  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -51,15 +50,6 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
-}
-
-/* Scrollbar hidden but still scrollable — used on the feed and reels pages */
-.hide-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* old Edge/IE */
-}
-.hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/new Edge */
 }
 
 .Toastify__toast.lumen-toast {

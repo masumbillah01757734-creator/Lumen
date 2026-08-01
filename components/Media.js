@@ -11,12 +11,12 @@ function Skeleton() {
         background:
           "linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%)",
         backgroundSize: "200% 100%",
-        animation: "lumen-shimmer 1.4s ease-in-out infinite",
+        animation: "leakreels-shimmer 1.4s ease-in-out infinite",
       }}
     >
       <Loader2 size={22} className="animate-spin" style={{ color: "var(--muted)" }} />
       <style jsx>{`
-        @keyframes lumen-shimmer {
+        @keyframes leakreels-shimmer {
           0% {
             background-position: 200% 0;
           }

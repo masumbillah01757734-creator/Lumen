@@ -24,9 +24,9 @@ export async function generateMetadata({ params }) {
   }
 
   const title = profile.displayName ? `${profile.displayName} (@${profile.username})` : `@${profile.username}`;
-  const description = profile.bio?.trim() || `See photos and videos shared by @${profile.username} on Lumen.`;
+  const description = profile.bio?.trim() || `See photos and videos shared by @${profile.username} on LeakReels.`;
   // Use the person's own avatar for the link-preview thumbnail when they
-  // have one; otherwise fall back to the Lumen logo so a plain profile-link
+  // have one; otherwise fall back to the LeakReels logo so a plain profile-link
   // share still renders a card instead of a blank preview.
   const image = profile.avatar || `${siteUrl}/og-default.png`;
   const url = `${siteUrl}/profile/${profile.username}`;
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url,
-      siteName: "Lumen",
+      siteName: "LeakReels",
       type: "profile",
       images: [{ url: image, width: profile.avatar ? 800 : 1200, height: profile.avatar ? 800 : 630, alt: title }],
     },

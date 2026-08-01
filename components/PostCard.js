@@ -250,7 +250,7 @@ export default function PostCard({ post, onDeleted, onEngaged }) {
     const url = `${window.location.origin}/p/${post.id}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: displayPost.caption || "Check this out on Lumen", url });
+        await navigator.share({ title: displayPost.caption || "Check this out on LeakReels", url });
       } else {
         await navigator.clipboard.writeText(url);
         notifySuccess("Link copied to clipboard.");

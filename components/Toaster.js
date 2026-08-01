@@ -13,7 +13,7 @@ export default function Toaster() {
       closeOnClick
       pauseOnHover
       theme="dark"
-      toastClassName="lumen-toast"
+      toastClassName="leakreels-toast"
       style={{ zIndex: 9999 }}
     />
   );

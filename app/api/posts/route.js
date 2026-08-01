@@ -11,7 +11,6 @@ export async function GET(req) {
   // such as liking, commenting, or following still require signing in and are
   // enforced by their own routes.
   const user = await getCurrentUser();
-  const followingSet = new Set((user?.following || []).map((id) => id.toString()));
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -81,7 +80,7 @@ export async function GET(req) {
     .filter(Boolean)
     .map((p) => Object.assign(p, { __isFresh: freshById.get(p._id.toString()) }));
 
-  const serialized = pageItems.map((p) => serializePost(p, user?._id || null, followingSet));
+  const serialized = pageItems.map((p) => serializePost(p, user?._id || null));
 
   return NextResponse.json({
     posts: serialized,
@@ -192,7 +191,7 @@ export async function POST(req) {
   }
 }
 
-export function serializePost(p, currentUserId, followingSet) {
+export function serializePost(p, currentUserId) {
   // currentUserId is null for guests browsing without an account.
   const uid = currentUserId ? currentUserId.toString() : null;
   const mediaItems = Array.isArray(p.mediaItems) && p.mediaItems.length
@@ -222,7 +221,6 @@ export function serializePost(p, currentUserId, followingSet) {
           username: p.author.username,
           displayName: p.author.displayName,
           avatar: p.author.avatar,
-          isFollowing: followingSet ? followingSet.has(p.author._id.toString()) : false,
         }
       : null,
     likeCount: p.likes?.length || 0,

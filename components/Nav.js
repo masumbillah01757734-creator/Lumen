@@ -21,7 +21,7 @@ export default function Nav({ user }) {
               className="transition-transform group-hover:rotate-45 duration-500"
             />
             <span className="font-display text-2xl tracking-tight hidden xs:inline" style={{ color: "var(--text)" }}>
-              Lumen
+              LeakReels
             </span>
           </Link>
 
@@ -78,7 +78,7 @@ export default function Nav({ user }) {
             className="transition-transform group-hover:rotate-45 duration-500"
           />
           <span className="font-display text-2xl tracking-tight hidden xs:inline" style={{ color: "var(--text)" }}>
-            Lumen
+            LeakReels
           </span>
         </Link>
 

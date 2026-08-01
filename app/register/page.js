@@ -33,7 +33,7 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
-      notifySuccess("Account created — welcome to Lumen.");
+      notifySuccess("Account created — welcome to LeakReels.");
       router.push("/");
       router.refresh();
     } catch {
@@ -49,7 +49,7 @@ export default function RegisterPage() {
         <div className="flex flex-col items-center mb-8">
           <Aperture size={40} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
           <h1 className="font-display text-4xl mt-3" style={{ color: "var(--text)" }}>
-            Join Lumen
+            Join LeakReels
           </h1>
           <p className="font-mono text-xs mt-2 tracking-wide" style={{ color: "var(--muted)" }}>
             ISO 100 · a fresh roll of film

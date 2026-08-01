@@ -47,7 +47,7 @@ function LoginForm() {
         <div className="flex flex-col items-center mb-8">
           <Aperture size={40} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
           <h1 className="font-display text-4xl mt-3" style={{ color: "var(--text)" }}>
-            Lumen
+            LeakReels
           </h1>
           <p className="font-mono text-xs mt-2 tracking-wide" style={{ color: "var(--muted)" }}>
             f/2.8 · share the frame

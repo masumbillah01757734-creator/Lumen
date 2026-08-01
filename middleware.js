@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const COOKIE_NAME = "lumen_session";
+const COOKIE_NAME = "leakreels_session";
 const PUBLIC_PATHS = ["/login", "/register"];
 
 // Paths anyone can view without signing in (read-only browsing, Instagram-style).

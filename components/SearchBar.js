@@ -98,7 +98,7 @@ export default function SearchBar({ initialQuery = "", autoFocus = false, onSubm
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           autoFocus={autoFocus}
-          placeholder="Search Lumen…"
+          placeholder="Search LeakReels…"
           className="bg-transparent outline-none text-sm w-full min-w-0"
           style={{ color: "var(--text)" }}
         />

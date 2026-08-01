@@ -23,7 +23,7 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const post = await loadPost(id);
   if (!post) {
-    return { title: "Post not found — Lumen" };
+    return { title: "Post not found — LeakReels" };
   }
 
   const siteUrl = await getSiteUrl();
@@ -39,14 +39,14 @@ export async function generateMetadata({ params }) {
     : tags.length
       ? `${tags.map((t) => `#${t}`).join(" ")}`
       : `A ${post.mediaType} by ${authorHandle}`;
-  const title = `${titleBase} — Lumen`;
+  const title = `${titleBase} — LeakReels`;
   const description = captionText
     ? captionText.slice(0, 200)
-    : `See this ${post.mediaType} shared by ${authorHandle} on Lumen.${tags.length ? ` ${tags.map((t) => `#${t}`).join(" ")}` : ""}`;
+    : `See this ${post.mediaType} shared by ${authorHandle} on LeakReels.${tags.length ? ` ${tags.map((t) => `#${t}`).join(" ")}` : ""}`;
 
   const image = post.thumbnail || (post.mediaType === "image" ? post.mediaUrl : "");
   // If a post somehow has no usable image (old post with no thumbnail yet,
-  // media still processing, etc.), fall back to the Lumen logo so a shared
+  // media still processing, etc.), fall back to the LeakReels logo so a shared
   // link always renders a card instead of a blank/empty preview.
   const fallbackImage = `${siteUrl}/og-default.png`;
   const ogImage = image || fallbackImage;
@@ -60,7 +60,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url,
-      siteName: "Lumen",
+      siteName: "LeakReels",
       type: post.mediaType === "video" ? "video.other" : "article",
       images: [{ url: ogImage, width: image ? 1200 : 1200, height: image ? 1200 : 630, alt: title }],
       ...(post.mediaType === "video" ? { videos: [{ url: post.mediaUrl }] } : {}),

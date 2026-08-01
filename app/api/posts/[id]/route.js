@@ -19,9 +19,7 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
 
-  return NextResponse.json({
-    post: serializePost(post, viewer?._id || null, new Set((viewer?.following || []).map((fid) => fid.toString()))),
-  });
+  return NextResponse.json({ post: serializePost(post, viewer?._id || null) });
 }
 
 export async function PATCH(req, { params }) {
