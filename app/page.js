@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, Loader2 } from "lucide-react";
 import PostCard from "@/components/PostCard";
+import AdBanner from "@/components/ads/AdBanner";
+import NativeBanner from "@/components/ads/NativeBanner";
+import { AD_BANNERS, NATIVE_BANNER } from "@/lib/ads";
 import { getInterestProfile } from "@/lib/interest";
 import { getSessionSeed, getSeenFreshIds, markSeenFresh, getSkippedIds, markSkipped, clearSkipped } from "@/lib/feedSession";
 
@@ -164,9 +167,29 @@ export default function FeedPage() {
         </div>
       )}
 
-      {posts?.map((post) => (
-        <div key={post.id} ref={(el) => observePost(el, post.id)}>
-          <PostCard post={post} onDeleted={handleDeleted} onEngaged={() => handleEngaged(post.id)} />
+      {posts?.map((post, i) => (
+        <div key={post.id}>
+          <div ref={(el) => observePost(el, post.id)}>
+            <PostCard post={post} onDeleted={handleDeleted} onEngaged={() => handleEngaged(post.id)} />
+          </div>
+
+          {/* Every 5th post: native banner. Every 5th offset by 2: 300x250 rectangle. */}
+          {(i + 1) % 5 === 0 && (
+            <NativeBanner
+              containerId={NATIVE_BANNER.containerId}
+              src={NATIVE_BANNER.src}
+              className="my-4"
+            />
+          )}
+          {i > 0 && (i + 1) % 5 === 2 && (
+            <div className="flex justify-center my-4">
+              <AdBanner
+                adKey={AD_BANNERS.medium_rectangle_300x250.key}
+                width={AD_BANNERS.medium_rectangle_300x250.width}
+                height={AD_BANNERS.medium_rectangle_300x250.height}
+              />
+            </div>
+          )}
         </div>
       ))}
 

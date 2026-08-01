@@ -2,6 +2,9 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 import Toaster from "@/components/Toaster";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import GlobalAdScripts from "@/components/ads/GlobalAdScripts";
+import AdBanner from "@/components/ads/AdBanner";
+import { AD_BANNERS } from "@/lib/ads";
 import { UserProvider } from "@/components/UserContext";
 import { getCurrentUser, getImpersonatorId } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
@@ -56,8 +59,32 @@ export default async function RootLayout({ children }) {
         <UserProvider user={user}>
           {impersonatorId && <ImpersonationBanner adminUsername={impersonatorUsername} />}
           <Nav user={user} />
-          <main className="flex-1 w-full">{children}</main>
+
+          {/* Leaderboard banner — desktop only, sits just under the nav */}
+          <div className="hidden sm:flex justify-center py-2" style={{ background: "var(--bg)" }}>
+            <AdBanner
+              adKey={AD_BANNERS.leaderboard_728x90.key}
+              width={AD_BANNERS.leaderboard_728x90.width}
+              height={AD_BANNERS.leaderboard_728x90.height}
+            />
+          </div>
+
+          <main className="flex-1 w-full pb-14 sm:pb-0">{children}</main>
+
+          {/* Sticky mobile banner, fixed to the bottom of the viewport */}
+          <div
+            className="sm:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center"
+            style={{ background: "var(--bg)" }}
+          >
+            <AdBanner
+              adKey={AD_BANNERS.mobile_320x50.key}
+              width={AD_BANNERS.mobile_320x50.width}
+              height={AD_BANNERS.mobile_320x50.height}
+            />
+          </div>
+
           <Toaster />
+          <GlobalAdScripts />
         </UserProvider>
       </body>
     </html>
