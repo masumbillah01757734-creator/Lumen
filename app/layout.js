@@ -1,3 +1,4 @@
+import Script from "next/script";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Toaster from "@/components/Toaster";
@@ -100,6 +101,20 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg)" }}>
+        {/* Google tag (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-RVTRZ26K2P"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-RVTRZ26K2P');
+          `}
+        </Script>
+
         {/* Sitewide structured data. A plain <script> works anywhere in the
             DOM (it doesn't need to live in <head>) — this is the pattern
             Next.js recommends for JSON-LD, since it isn't covered by the
