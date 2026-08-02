@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "leakreels_session";
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/robots.txt",
+  "/sitemap.xml",
+];
 
 // Paths anyone can view without signing in (read-only browsing, Instagram-style).
 // Actions on these pages (like, comment, follow, etc.) are still gated by the
@@ -21,7 +26,9 @@ export async function middleware(req) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/uploads") ||
-    pathname === "/favicon.ico"
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
   ) {
     return NextResponse.next();
   }
