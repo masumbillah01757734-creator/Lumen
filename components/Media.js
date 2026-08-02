@@ -45,7 +45,7 @@ function Fallback({ video }) {
 // Wraps <img> with a shimmering placeholder while it loads and a friendly
 // fallback if the media fails to load — so a slow/broken image never leaves
 // a blank hole in the layout.
-export function MediaImage({ src, alt, className, wrapperClassName, style }) {
+export function MediaImage({ src, alt, className, wrapperClassName, style, loading = "lazy" }) {
   const [state, setState] = useState(src ? "loading" : "error");
 
   return (
@@ -57,6 +57,8 @@ export function MediaImage({ src, alt, className, wrapperClassName, style }) {
           alt={alt || ""}
           className={className}
           style={{ opacity: state === "loaded" ? 1 : 0, transition: "opacity 0.25s ease" }}
+          loading={loading}
+          decoding="async"
           onLoad={() => setState("loaded")}
           onError={() => setState("error")}
         />
@@ -83,6 +85,10 @@ export const MediaVideo = forwardRef(function MediaVideo(
           src={src}
           className={className}
           style={{ opacity: state === "loaded" ? 1 : 0, transition: "opacity 0.25s ease" }}
+          // Default to "metadata" so a video only downloads its dimensions
+          // and poster frame up front, not the full file — callers can still
+          // override this via videoProps, same as before.
+          preload="metadata"
           onLoadedData={(e) => {
             setState("loaded");
             onLoadedData?.(e);

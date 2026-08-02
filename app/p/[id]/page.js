@@ -23,7 +23,12 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const post = await loadPost(id);
   if (!post) {
-    return { title: "Post not found — LeakReels" };
+    // Paired with notFound() below (404 status) — belt-and-braces so a
+    // crawler that somehow still sees this metadata knows not to index it.
+    return {
+      title: "Post not found — LeakReels",
+      robots: { index: false, follow: false },
+    };
   }
 
   const siteUrl = await getSiteUrl();
@@ -74,6 +79,53 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// Structured data for a single post. Videos get VideoObject (eligible for
+// Google's video rich results); photo posts get SocialMediaPosting, which
+// is the schema.org type Google recommends for user-generated social posts.
+function buildPostJsonLd(post, url, siteUrl) {
+  const authorName = post.author?.displayName || post.author?.username || "LeakReels user";
+  const image = post.thumbnail || (post.mediaType === "image" ? post.mediaUrl : `${siteUrl}/og-default.png`);
+  const interactionStatistic = [
+    {
+      "@type": "InteractionCounter",
+      interactionType: "https://schema.org/LikeAction",
+      userInteractionCount: post.likes?.length || 0,
+    },
+    {
+      "@type": "InteractionCounter",
+      interactionType: "https://schema.org/CommentAction",
+      userInteractionCount: post.comments?.length || 0,
+    },
+  ];
+
+  if (post.mediaType === "video") {
+    return {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: (post.caption || `A video by ${authorName}`).slice(0, 110),
+      description: (post.caption || `A video shared by ${authorName} on LeakReels.`).slice(0, 300),
+      thumbnailUrl: [image],
+      uploadDate: post.createdAt,
+      contentUrl: post.mediaUrl,
+      url,
+      author: { "@type": "Person", name: authorName },
+      interactionStatistic,
+    };
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "SocialMediaPosting",
+    headline: (post.caption || `A photo by ${authorName}`).slice(0, 110),
+    image: [image],
+    datePublished: post.createdAt,
+    dateModified: post.updatedAt || post.createdAt,
+    url,
+    author: { "@type": "Person", name: authorName },
+    interactionStatistic,
+  };
+}
+
 export default async function PostPermalinkPage({ params }) {
   const { id } = await params;
   const post = await loadPost(id);
@@ -82,8 +134,15 @@ export default async function PostPermalinkPage({ params }) {
   const viewer = await getCurrentUser();
   const serialized = serializePost(post, viewer?._id || null);
 
+  const siteUrl = await getSiteUrl();
+  const jsonLd = buildPostJsonLd(post, `${siteUrl}/p/${id}`, siteUrl);
+
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <PostCard post={serialized} />
     </div>
   );

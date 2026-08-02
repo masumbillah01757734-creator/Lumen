@@ -19,7 +19,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
-function MediaLightbox({ items, index, onIndexChange, onClose }) {
+function MediaLightbox({ items, index, onIndexChange, onClose, caption }) {
   const item = items[index];
   if (!item) return null;
 
@@ -82,7 +82,7 @@ function MediaLightbox({ items, index, onIndexChange, onClose }) {
           <SimpleVideo src={item.url} className="max-w-full max-h-full object-contain" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.url} alt="" className="max-w-full max-h-full object-contain" />
+          <img src={item.url} alt={caption || "Post media"} className="max-w-full max-h-full object-contain" />
         )}
       </div>
     </div>
@@ -114,6 +114,7 @@ function MediaCarousel({ items, caption }) {
       index={index}
       onIndexChange={setIndex}
       onClose={() => setLightboxOpen(false)}
+      caption={caption}
     />
   );
 
@@ -538,7 +539,7 @@ export default function PostCard({ post, onDeleted, onEngaged }) {
 
       <div style={{ background: "#0b0a08" }}>
         {displayPost.mediaType === "video" ? (
-          <SimpleVideo src={displayPost.mediaUrl} className="w-full max-h-150 object-contain" />
+          <SimpleVideo src={displayPost.mediaUrl} poster={displayPost.thumbnailUrl} className="w-full max-h-150 object-contain" />
         ) : (
           <MediaCarousel items={currentMediaItems} caption={displayPost.caption} />
         )}
@@ -702,7 +703,7 @@ export default function PostCard({ post, onDeleted, onEngaged }) {
                           >
                             {c.author?.avatar ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={c.author.avatar} alt="" className="w-full h-full object-cover" />
+                              <img src={c.author.avatar} alt={c.author?.username || ""} className="w-full h-full object-cover" />
                             ) : (
                               c.author?.displayName?.[0]?.toUpperCase() || c.author?.username?.[0]?.toUpperCase() || "?"
                             )}

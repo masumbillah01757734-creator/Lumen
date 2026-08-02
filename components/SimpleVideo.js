@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { MediaVideo } from "@/components/Media";
 
-export default function SimpleVideo({ src, className }) {
+export default function SimpleVideo({ src, className, poster }) {
   const videoRef = useRef(null);
   const [muted, setMuted] = useState(true);
 
@@ -26,6 +26,7 @@ export default function SimpleVideo({ src, className }) {
         muted={muted}
         playsInline
         loop
+        poster={poster || undefined}
         onClick={togglePlay}
         className={className}
         wrapperClassName="w-full h-full"

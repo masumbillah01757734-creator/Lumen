@@ -7,6 +7,7 @@ import AdBanner from "@/components/ads/AdBanner";
 import { AD_BANNERS } from "@/lib/ads";
 import { UserProvider } from "@/components/UserContext";
 import { getCurrentUser, getImpersonatorId } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/site";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
@@ -14,26 +15,69 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-export const metadata = {
-  title: {
-    default: "LeakReels",
-    template: "%s — LeakReels",
-  },
-  description: "Share the frame. A photo and video community.",
-  // Default link-preview image for any page that doesn't set its own
-  // (e.g. a profile page) — so sharing a plain link still shows a branded
-  // card instead of nothing.
-  openGraph: {
-    siteName: "LeakReels",
-    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "LeakReels" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    images: ["/og-default.png"],
-  },
-};
+// generateMetadata (instead of a static `metadata` export) so we can set
+// metadataBase from the actual request host/env — this is what lets every
+// other page's relative canonical/OG urls resolve correctly.
+export async function generateMetadata() {
+  const siteUrl = await getSiteUrl();
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: "LeakReels",
+      template: "%s — LeakReels",
+    },
+    description: "Share the frame. A photo and video community.",
+    keywords: ["LeakReels", "photo sharing", "video sharing", "reels", "photo community", "video community"],
+    alternates: { canonical: "/" },
+    // Default link-preview image for any page that doesn't set its own
+    // (e.g. a profile page) — so sharing a plain link still shows a branded
+    // card instead of nothing.
+    openGraph: {
+      siteName: "LeakReels",
+      title: "LeakReels",
+      description: "Share the frame. A photo and video community.",
+      url: siteUrl,
+      type: "website",
+      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "LeakReels" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "LeakReels",
+      description: "Share the frame. A photo and video community.",
+      images: ["/og-default.png"],
+    },
+  };
+}
 
 export default async function RootLayout({ children }) {
+  const siteUrl = await getSiteUrl();
+
+  // Sitewide structured data: a WebSite entity (enables a sitelinks search
+  // box in Google results) plus an Organization entity that ties the brand
+  // name/logo to the domain. These describe the site as a whole, so they're
+  // emitted once here rather than duplicated on every page.
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "LeakReels",
+      url: siteUrl,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${siteUrl}/search?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "LeakReels",
+      url: siteUrl,
+      logo: `${siteUrl}/og-default.png`,
+    },
+  ];
+
   const raw = await getCurrentUser();
   const user = raw
     ? {
@@ -56,6 +100,14 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg)" }}>
+        {/* Sitewide structured data. A plain <script> works anywhere in the
+            DOM (it doesn't need to live in <head>) — this is the pattern
+            Next.js recommends for JSON-LD, since it isn't covered by the
+            Metadata API. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        />
         <UserProvider user={user}>
           {impersonatorId && <ImpersonationBanner adminUsername={impersonatorUsername} />}
           <Nav user={user} />

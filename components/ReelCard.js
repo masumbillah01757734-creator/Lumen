@@ -297,6 +297,8 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
       <video
         ref={videoRef}
         src={post.mediaUrl}
+        poster={post.thumbnailUrl || undefined}
+        preload="metadata"
         loop
         muted={muted}
         playsInline
@@ -383,7 +385,7 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
           >
             {post.author?.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.author.avatar} alt="" className="w-full h-full object-cover" />
+              <img src={post.author.avatar} alt={post.author?.username || ""} className="w-full h-full object-cover" />
             ) : (
               post.author?.displayName?.[0]?.toUpperCase() || "?"
             )}
@@ -452,7 +454,7 @@ export default function ReelCard({ post, onDeleted, muted, onMuteChange, onWatch
                           >
                             {c.author?.avatar ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={c.author.avatar} alt="" className="w-full h-full object-cover" />
+                              <img src={c.author.avatar} alt={c.author?.username || ""} className="w-full h-full object-cover" />
                             ) : (
                               c.author?.displayName?.[0]?.toUpperCase() || c.author?.username?.[0]?.toUpperCase() || "?"
                             )}
