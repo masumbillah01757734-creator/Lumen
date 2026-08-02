@@ -31,6 +31,11 @@ export async function generateMetadata() {
     description: "Share the frame. A photo and video community.",
     keywords: ["LeakReels", "photo sharing", "video sharing", "reels", "photo community", "video community"],
     alternates: { canonical: "/" },
+    verification: {
+      other: {
+        "msvalidate.01": "ACF8EE7042BC460855419CC58BA0853E",
+      },
+    },
     // Default link-preview image for any page that doesn't set its own
     // (e.g. a profile page) — so sharing a plain link still shows a branded
     // card instead of nothing.
