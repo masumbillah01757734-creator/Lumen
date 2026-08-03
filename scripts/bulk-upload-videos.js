@@ -1,16 +1,16 @@
 /**
- * Bulk video uploader for LeakReels.
+ * Bulk media uploader for LeakReels.
  *
- * "video" নামের folder-এ যতগুলো video file থাকবে, প্রতিটা video আলাদা আলাদা
+ * "media" নামের folder-এ যতগুলো media file থাকবে, প্রতিটা media আলাদা আলাদা
  * post হিসেবে একটা নির্দিষ্ট user-এর account-এ upload হয়ে যাবে।
  *
  * ব্যবহার:
  *   1) নিচের CONFIG অংশ পূরণ করুন (site URL, username/password, folder path)।
- *   2) প্রজেক্টের ভেতর থেকে রান করুন:  node scripts/bulk-upload-videos.js
+ *   2) প্রজেক্টের ভেতর থেকে রান করুন:  node scripts/bulk-upload-media.js
  *      (Node.js v18 বা তার বেশি ভার্সন লাগবে — built-in fetch দরকার)
  *
  * এটা ঠিক app-এর upload page যা করে সেটাই করে: presigned URL নেয়,
- * video সরাসরি storage-এ পাঠায়, ভিডিও থেকে একটা frame বের করে থাম্বনেইল
+ * media সরাসরি storage-এ পাঠায়, ভিডিও থেকে একটা frame বের করে থাম্বনেইল
  * হিসেবে আপলোড করে, তারপর post তৈরি করে — শুধু browser ছাড়াই, command line থেকে।
  *
  * থাম্বনেইলের জন্য system-এ `ffmpeg` ইনস্টল থাকতে হবে (যেমন: `sudo apt install
@@ -30,11 +30,11 @@ const CONFIG = {
   BASE_URL: "http://localhost:3000",
 
   // যে user-এর account-এ upload হবে তার username/email আর password
-  IDENTIFIER: "mallu",
+  IDENTIFIER: "rupali",
   PASSWORD: "king@billah",
 
-  // যে folder-এ video file গুলো আছে (এই script-এর সাপেক্ষে path, বা full path দিন)
-  VIDEO_FOLDER: path.join(__dirname, "..", "video"),
+  // যে folder-এ media file গুলো আছে (এই script-এর সাপেক্ষে path, বা full path দিন)
+  MEDIA_FOLDER: path.join(__dirname, "..", "media"),
 
   // প্রতিটা post-এ caption/hashtags/location — চাইলে ফাঁকা রাখতে পারেন
   CAPTION: "",
@@ -53,11 +53,19 @@ const CONFIG = {
 // ────────────────────────────────────────────────────────────────────
 
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov"];
+const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+const ALLOWED_EXTENSIONS = [...VIDEO_EXTENSIONS, ...IMAGE_EXTENSIONS];
+
 const CONTENT_TYPE_BY_EXT = {
   ".mp4": "video/mp4",
   ".webm": "video/webm",
   ".mov": "video/quicktime",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
 };
+
 const MAX_BYTES = 50 * 1024 * 1024; // app-এর নিজের 50MB limit
 
 function sleep(ms) {
@@ -95,7 +103,7 @@ async function login() {
   return cookie;
 }
 
-async function presignVideo(cookie, fileName, contentType, size) {
+async function presignMedia(cookie, fileName, contentType, size) {
   const res = await fetch(`${CONFIG.BASE_URL}/api/uploads/video-presign`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -115,7 +123,7 @@ async function uploadToStorage(uploadUrl, buffer, contentType) {
     body: buffer,
   });
   if (!res.ok) {
-    throw new Error(`Video upload to storage failed (status ${res.status})`);
+    throw new Error(`Media upload to storage failed (status ${res.status})`);
   }
 }
 
@@ -161,14 +169,14 @@ async function uploadThumbnail(cookie, thumbPath) {
     body: form,
   });
   const data = await res.json().catch(() => ({}));
-  fs.unlink(thumbPath, () => {}); // temp file পরিষ্কার করে দেওয়া
+  fs.unlink(thumbPath, () => { }); // temp file পরিষ্কার করে দেওয়া
   if (!res.ok) {
     throw new Error(data.error || `Thumbnail upload failed (status ${res.status})`);
   }
   return data.url || "";
 }
 
-async function createPost(cookie, { url, key, caption, hashtags, location, thumbnailUrl }) {
+async function createPost(cookie, { url, key, caption, hashtags, location, thumbnailUrl, mediaType }) {
   const res = await fetch(`${CONFIG.BASE_URL}/api/posts`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -177,7 +185,7 @@ async function createPost(cookie, { url, key, caption, hashtags, location, thumb
       hashtags,
       location,
       thumbnailUrl: thumbnailUrl || "", // ffmpeg দিয়ে বানানো frame, না পেলে খালি (app-ও এটা best-effort হিসেবে treat করে)
-      mediaItems: [{ url, key, mediaType: "video" }],
+      mediaItems: [{ url, key, mediaType }],
     }),
   });
   const data = await res.json().catch(() => ({}));
@@ -187,22 +195,38 @@ async function createPost(cookie, { url, key, caption, hashtags, location, thumb
   return data.post;
 }
 
+function isVideoFile(fileName) {
+  const ext = path.extname(fileName).toLowerCase();
+  return VIDEO_EXTENSIONS.includes(ext);
+}
+
+function isImageFile(fileName) {
+  const ext = path.extname(fileName).toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
+function getMediaType(fileName) {
+  if (isVideoFile(fileName)) return "video";
+  if (isImageFile(fileName)) return "image";
+  throw new Error(`Unsupported file type: ${fileName}`);
+}
+
 async function main() {
-  if (!fs.existsSync(CONFIG.VIDEO_FOLDER)) {
-    throw new Error(`Video folder পাওয়া যায়নি: ${CONFIG.VIDEO_FOLDER}`);
+  if (!fs.existsSync(CONFIG.MEDIA_FOLDER)) {
+    throw new Error(`Media folder পাওয়া যায়নি: ${CONFIG.MEDIA_FOLDER}`);
   }
 
   const files = fs
-    .readdirSync(CONFIG.VIDEO_FOLDER)
-    .filter((name) => VIDEO_EXTENSIONS.includes(path.extname(name).toLowerCase()))
+    .readdirSync(CONFIG.MEDIA_FOLDER)
+    .filter((name) => ALLOWED_EXTENSIONS.includes(path.extname(name).toLowerCase()))
     .sort();
 
   if (files.length === 0) {
-    console.log("এই folder-এ কোনো video file (.mp4/.webm/.mov) পাওয়া যায়নি।");
+    console.log("এই folder-এ কোনো media file (.mp4/.webm/.mov/.jpg/.jpeg/.png/.webp) পাওয়া যায়নি।");
     return;
   }
 
-  console.log(`${files.length}টা video পাওয়া গেছে। Upload শুরু হচ্ছে...\n`);
+  console.log(`${files.length}টা media পাওয়া গেছে। Upload শুরু হচ্ছে...\n`);
 
   const cookie = await login();
 
@@ -210,10 +234,11 @@ async function main() {
   let failed = 0;
 
   for (const fileName of files) {
-    const filePath = path.join(CONFIG.VIDEO_FOLDER, fileName);
+    const filePath = path.join(CONFIG.MEDIA_FOLDER, fileName);
     const ext = path.extname(fileName).toLowerCase();
     const contentType = CONTENT_TYPE_BY_EXT[ext];
     const stat = fs.statSync(filePath);
+    const mediaType = getMediaType(fileName);
 
     process.stdout.write(`→ ${fileName} (${(stat.size / (1024 * 1024)).toFixed(1)} MB) ... `);
 
@@ -225,16 +250,20 @@ async function main() {
 
     try {
       const buffer = fs.readFileSync(filePath);
-      const presign = await presignVideo(cookie, fileName, contentType, stat.size);
+      const presign = await presignMedia(cookie, fileName, contentType, stat.size);
       await uploadToStorage(presign.uploadUrl, buffer, contentType);
 
       let thumbnailUrl = "";
-      const thumbPath = await extractThumbnailWithFfmpeg(filePath);
-      if (thumbPath) {
-        try {
-          thumbnailUrl = await uploadThumbnail(cookie, thumbPath);
-        } catch (thumbErr) {
-          console.log(`\n   (থাম্বনেইল আপলোড ব্যর্থ, thumbnail ছাড়াই post হবে: ${thumbErr.message})`);
+
+      // Only generate thumbnail for videos
+      if (mediaType === "video") {
+        const thumbPath = await extractThumbnailWithFfmpeg(filePath);
+        if (thumbPath) {
+          try {
+            thumbnailUrl = await uploadThumbnail(cookie, thumbPath);
+          } catch (thumbErr) {
+            console.log(`\n   (থাম্বনেইল আপলোড ব্যর্থ, thumbnail ছাড়াই post হবে: ${thumbErr.message})`);
+          }
         }
       }
 
@@ -249,9 +278,11 @@ async function main() {
         hashtags: CONFIG.HASHTAGS,
         location: CONFIG.LOCATION,
         thumbnailUrl,
+        mediaType,
       });
 
-      console.log(thumbnailUrl ? "OK, post ও থাম্বনেইল তৈরি হয়েছে ✔" : "OK, post তৈরি হয়েছে (থাম্বনেইল ছাড়া) ✔");
+      const mediaTypeDisplay = mediaType === "video" ? "Video" : "Image";
+      console.log(thumbnailUrl ? `OK, ${mediaTypeDisplay} ও থাম্বনেইল তৈরি হয়েছে ✔` : `OK, ${mediaTypeDisplay} তৈরি হয়েছে ${mediaType === "video" ? "(থাম্বনেইল ছাড়া)" : ""} ✔`);
       uploaded++;
     } catch (err) {
       console.log(`FAILED — ${err.message}`);

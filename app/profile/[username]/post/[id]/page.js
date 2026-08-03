@@ -15,18 +15,41 @@ export default function ProfilePostViewerPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef(null);
 
+  // Tracks the request "generation" for the current username/id so that
+  // stale responses (e.g. from React Strict Mode's double-invoked effects
+  // in dev, or a fast username/id change) never get applied — this is what
+  // was causing page-1 posts to be appended twice and triggering duplicate
+  // React keys.
+  const requestIdRef = useRef(0);
+
+  // Merges new posts in, de-duping by id as a safety net in case the same
+  // post ever comes back in more than one page.
+  function mergePosts(prev, incoming) {
+    const base = prev || [];
+    const seen = new Set(base.map((p) => p.id));
+    const deduped = incoming.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+    return [...base, ...deduped];
+  }
+
   const loadMore = useCallback(
-    (pageNum) => {
+    (pageNum, requestId) => {
       setLoadingMore(true);
       fetch(`/api/users/${username}/posts?page=${pageNum}&exclude=${id}`)
         .then((res) => res.json())
         .then((data) => {
+          if (requestId !== requestIdRef.current) return; // stale response, ignore
           if (data.error) return;
-          setPosts((prev) => [...(prev || []), ...data.posts]);
+          setPosts((prev) => mergePosts(prev, data.posts));
           setHasMore(Boolean(data.hasMore));
         })
         .catch(() => { })
-        .finally(() => setLoadingMore(false));
+        .finally(() => {
+          if (requestId === requestIdRef.current) setLoadingMore(false);
+        });
     },
     [username, id]
   );
@@ -35,6 +58,7 @@ export default function ProfilePostViewerPage() {
   // rather than pulling this user's entire post history just to find it.
   // The rest of their posts then load a page at a time as you scroll.
   useEffect(() => {
+    const requestId = ++requestIdRef.current;
     setPosts(null);
     setError("");
     setPage(1);
@@ -43,14 +67,17 @@ export default function ProfilePostViewerPage() {
     fetch(`/api/posts/${id}`)
       .then((res) => res.json())
       .then((data) => {
+        if (requestId !== requestIdRef.current) return; // stale response, ignore
         if (data.error) {
           setError(data.error);
           return;
         }
         setPosts([data.post]);
-        loadMore(1);
+        loadMore(1, requestId);
       })
-      .catch(() => setError("Could not load this post."));
+      .catch(() => {
+        if (requestId === requestIdRef.current) setError("Could not load this post.");
+      });
   }, [username, id, loadMore]);
 
   useEffect(() => {
@@ -62,7 +89,7 @@ export default function ProfilePostViewerPage() {
         if (entries[0].isIntersecting) {
           const next = page + 1;
           setPage(next);
-          loadMore(next);
+          loadMore(next, requestIdRef.current);
         }
       },
       { rootMargin: "600px" }

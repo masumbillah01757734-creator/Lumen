@@ -3,8 +3,28 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Users2, ImagePlus, Clapperboard, Eye } from "lucide-react";
 import { notifyError, notifySuccess, confirmToast } from "@/lib/toast";
 import { useCurrentUser } from "@/components/UserContext";
+
+function StatCard({ icon: Icon, label, value, subValue }) {
+  return (
+    <div className="rounded-2xl border p-3 sm:p-4 flex items-center gap-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--surface-2)", color: "var(--gold)" }}>
+        <Icon size={18} strokeWidth={1.75} />
+      </div>
+      <div className="min-w-0">
+        <div className="font-display text-xl leading-tight truncate" style={{ color: "var(--text)" }}>
+          {value === null || value === undefined ? "—" : value.toLocaleString()}
+        </div>
+        <div className="text-xs truncate" style={{ color: "var(--muted)" }}>
+          {label}
+          {subValue !== undefined && subValue !== null ? ` · ${subValue.toLocaleString()} today` : ""}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -18,6 +38,7 @@ export default function AdminPage() {
   const [savingRole, setSavingRole] = useState(false);
   const [banningId, setBanningId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [stats, setStats] = useState(null);
 
   async function loadUsers() {
     try {
@@ -36,8 +57,19 @@ export default function AdminPage() {
     }
   }
 
+  async function loadStats() {
+    try {
+      const res = await fetch("/api/admin/stats");
+      const data = await res.json();
+      if (res.ok) setStats(data);
+    } catch {
+      // Stats are a nice-to-have; a failure here shouldn't block the rest of the page.
+    }
+  }
+
   useEffect(() => {
     loadUsers();
+    loadStats();
   }, []);
 
   async function updateRole(userId, role) {
@@ -166,9 +198,21 @@ export default function AdminPage() {
           </h1>
           <p className="text-sm" style={{ color: "var(--muted)" }}>View users and account details</p>
         </div>
-        <Link href="/" className="self-start sm:self-auto rounded-full px-4 py-2 text-sm" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
-          Home
-        </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link href="/dashboard/content" className="rounded-full px-4 py-2 text-sm" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+            Content
+          </Link>
+          <Link href="/" className="rounded-full px-4 py-2 text-sm" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+            Home
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <StatCard icon={Users2} label="Users" value={stats?.users?.total} subValue={stats?.users?.signupsToday} />
+        <StatCard icon={ImagePlus} label="Posts" value={stats?.posts?.total} subValue={stats?.posts?.todayCount} />
+        <StatCard icon={Clapperboard} label="Reels" value={stats?.reels?.total} subValue={stats?.reels?.todayCount} />
+        <StatCard icon={Eye} label="Total views" value={stats?.views?.total} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
