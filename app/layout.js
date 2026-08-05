@@ -29,7 +29,7 @@ export async function generateMetadata() {
       template: "%s — LeakReels",
     },
     description: "Welcome to leakreels.site,Here are the most viral porn videos on Instagram. Which you can watch in reels form. If you want, you can upload videos and post pictures here. ",
-    keywords: ["LeakReels","instagram viral", "xvideos","xvideos.com","leakreels.side", "x videos","x video","porn","video","videos","porn movies","free porn","free porn movies","sex","porno","free sex","tube porn","tube","videos","full porn","xxnx","xnxxx","xxx","pussy","desi viral video"],
+    keywords: ["LeakReels","instagram viral", "xvideos","xvideos.com","leakreels.side", "x videos","x video","porn","video","videos","porn movies","free porn","free porn movies","sex","porno","free sex","tube porn","tube","full porn","xxnx","xnxxx","xxx","pussy","desi viral video","desi viral videos","desi viral","pornhub","pornhub videos","pornhub.com videos","pornhub.com videos","pornhub.com",],
     alternates: { canonical: "/" },
     verification: {
       other: {
